@@ -1,4 +1,4 @@
-# 前言与引言 (Preface & Introduction)
+# 前言 (Preface)
 
 > **原书标题**: Mastering Ethereum: 2nd Edition  
 > **原作者**: Andreas M. Antonopoulos, Gavin Wood, et al.  
