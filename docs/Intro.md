@@ -3,7 +3,7 @@
 这是《精通以太坊》一书的第二版。您可以通过以下方式获取本书：
 
 * **在亚马逊 (Amazon) 购买纸质书**
-* **阅读在线版本**
+* **阅读在线版本**[点击访问](https://masteringethereum.xyz/)
 
 ### 作者 (Authors)
 * **Andreas M. Antonopoulos**
