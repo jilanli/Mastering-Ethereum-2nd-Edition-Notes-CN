@@ -350,7 +350,7 @@ $ mv jwt.hex ../jwt.hex
 **运行执行客户端**。首先，你需要运行执行客户端 **Geth**。导航回 `execution` 文件夹并运行以下命令：
 
 ```bash
-$ cd .. # 此命令用于返回 ethereum-node1 文件夹
+$ cd .. # this command is used to go back in the ethereum-node1 folder
 $ cd execution
 $ ./go-ethereum/build/bin/geth --mainnet \
     --http \
@@ -359,7 +359,16 @@ $ ./go-ethereum/build/bin/geth --mainnet \
 
 ```
 
-如果你看到 `Starting Geth on Ethereum mainnet...` 等日志，说明一切运行正常。
+如果你看到以下的日志，说明一切运行正常。
+```
+INFO [06-08|17:56:38.738] Starting Geth on Ethereum mainnet...
+INFO [06-08|17:56:38.738] Bumping default cache on mainnet         provided=1024 updated=4096
+INFO [06-08|17:56:38.740] Maximum peer count                       ETH=50 total=50
+INFO [06-08|17:56:38.745] Set global gas cap                       cap=50,000,000
+INFO [06-08|17:56:38.752] Initializing the KZG library             backend=gokzg
+INFO [06-08|17:56:38.771] Allocated trie memory caches             clean=614.00MiB dirty=1024.00MiB
+INFO [06-08|17:56:38.772] Using pebble as the backing database…
+```
 
 **运行共识客户端**。现在你应该运行共识客户端 **Prysm**。不要关闭执行客户端所在的终端标签页。只需打开一个新的终端窗口或标签页并导航到 `consensus` 文件夹：
 
@@ -376,67 +385,143 @@ $ ./prysm.sh beacon-chain \
 ```
 
 系统可能会要求你接受 **Prysm** 的服务条款，输入 `accept` 即可。现在你就大功告成了！你应该会看到执行客户端和共识客户端开始在终端输出大量日志。这意味着你的以太坊全节点正在同步到链尖。
+执行客户端
+```
+INFO [06-08|18:08:49.039] Forkchoice requested sync to new head    number=20,048,206 hash=8df21a..4afb49 finalized=unknown
+INFO [06-08|18:08:52.507] Syncing beacon headers                   downloaded=322,560 left=19,725,577 eta=42m4.183s
+INFO [06-08|18:08:57.515] Looking for peers                        peercount=1 tried=42 static=0
+INFO [06-08|18:09:00.508] Syncing beacon headers                   downloaded=370,688 left=19,677,449 eta=43m35.827s
+INFO [06-08|18:09:01.637] Forkchoice requested sync to new head    number=20,048,207 hash=d99dab..0293c9 finalized=unknown
 
----
+```
 
-> [!TIP] **译者注**：
-> 1. **IOPS 是关键指标**：从后端架构的角度来看，同步节点的瓶颈通常不在 **CPU** 或带宽，而在磁盘的随机读写（**IOPS**）。由于 **Merkle-Patricia Trie** 的状态频繁更新，**HDD** 的寻道延迟会导致节点永远跟不上主网的出块速度。在云端部署时，请务必选择预留 **IOPS** 的高速云磁盘。
-> 2. **JWT 认证的重要性**：`jwt.hex` 不仅仅是一个密码，它保护了执行层的敏感接口（端口 `8551`）。这个端口允许共识层通过 `Engine API` 指示执行层切换分叉或打包区块。如果这个接口暴露且无认证，攻击者可以通过恶意指令远程控制你的节点行为。
-> 
-> 
+共识客户端
+```
+[2024-06-08 18:09:24]  INFO blockchain: Called new payload with optimistic block payloadBlockHash=0xd44520a09a7a slot=9253245
+[2024-06-08 18:09:24]  INFO blockchain: Called fork choice updated with optimistic block finalizedPayloadBlockHash=0x38916be8a559 headPayloadBlockHash=0xd44520a09a7a headSlot=9253245
+[2024-06-08 18:09:24]  INFO blockchain: Synced new block block=0xec930e7c... epoch=289163finalizedEpoch=289161 finalizedRoot=0xb8065a78... slot=9253245
+[2024-06-08 18:09:24]  INFO blockchain: Finished applying state transition attestations=123 payloadHash=0xd44520a09a7a slot=9253245 syncBitsCount=510 txCount=212
+[2024-06-08 18:09:24]  INFO p2p: Peer summary activePeers=64 inbound=0 outbound=63
+[2024-06-08 18:09:28]  INFO sync: Subscribed to topic=/eth2/6a95a1a9/beacon_attestation_35/ssz_snappy[2024-06-08 18:09:36]  INFO blockchain: Called new payload with optimistic block payloadBlockHash=0xff879102f29e slot=9253246
+```
 
-#### Reth-Lighthouse
+现在，你已经拥有了一个正在同步至链尖（tip of the chain）的以太坊全节点。请注意，同步过程可能会耗费大量时间（根据你的硬件性能和网络连接状况，可能需要数小时甚至数天）。
 
-让我们使用两种不同的客户端重复上述过程：使用 **Reth** 作为执行客户端，**Lighthouse** 作为共识客户端。
+[!NOTE] 如果你想深入了解本示例中使用的具体命令和 CLI 标志（flags），Geth 和 Prysm 的官方文档是最佳查阅途径。
+
+--- 
+### Reth-Lighthouse 客户端组合
+
+让我们尝试使用另外两种不同的客户端执行相同的操作：使用 **Reth** 作为执行客户端（execution client），使用 **Lighthouse** 作为共识客户端（consensus client）。
 
 #### Reth
 
-进入 `ethereum-node2` 文件夹，然后进入 `execution` 文件夹：
+首先，你需要安装 **Reth**。进入 `ethereum-node2` 文件夹，然后进入 `execution` 文件夹。
+
+**克隆存储库**。第一步是克隆 **Git** 存储库以获取源代码副本。回到你的家目录（home directory）并输入以下命令：
 
 ```bash
 $ cd ethereum-node2
 $ cd execution
 $ git clone https://github.com/paradigmxyz/reth
+
+```
+
+太棒了！现在你已经拥有了 **Reth** 的本地副本，可以为你的平台编译可执行文件了。
+
+**从源代码构建 Reth**。要构建 **Reth**，你需要运行以下命令：
+
+```bash
 $ cd reth
 $ cargo install --locked --path bin/reth --bin reth
 
 ```
 
-构建可能需要 **10 分钟**以上。完成后，通过 `reth --version` 检查安装是否正确。
+安装可能需要 10 分钟以上的时间。完成后，你可以通过运行以下命令来检查 **Reth** 是否已正确安装：
+
+```bash
+$ reth --version
+
+```
+
+你应该会看到类似以下的内容（版本可能会有所变动）：
+
+```text
+reth Version: 0.2.0-beta.6-dev
+Commit SHA: ac29b4b73
+Build Timestamp: 2024-04-22T17:29:01.000000000Z
+Build Features: jemalloc
+Build Profile: maxperf+
+
+```
+
+---
 
 #### Lighthouse
 
-现在进入 `consensus` 文件夹并安装共识客户端 **Lighthouse**。
+现在你需要安装 **Lighthouse**，即共识客户端。返回 `ethereum-node2` 文件夹并进入 `consensus` 文件夹：
 
 ```bash
-$ cd .. # 返回 ethereum-node2 文件夹
+$ cd .. # 此命令用于返回 ethereum-node2 文件夹
 $ cd consensus
 
 ```
 
-你需要先安装依赖项。在 **macOS** 上运行 `brew install cmake`。然后克隆并构建：
+你首先需要安装一些依赖项。如果你使用的是 **macOS**，需要运行：
+
+```bash
+$ brew install cmake
+
+```
+
+如果你使用其他操作系统，可以参考 **Lighthouse** 的官方文档。
+
+**克隆存储库**。第一步是克隆 **Git** 存储库以获取源代码副本：
 
 ```bash
 $ git clone https://github.com/sigp/lighthouse.git
+
+```
+
+**从源代码构建 Lighthouse**。要构建 **Lighthouse**，你需要运行以下命令：
+
+```bash
 $ cd lighthouse
 $ git checkout stable
 $ make
 
 ```
 
+这可能需要超过 10 分钟才能完成。
+
+---
+
 #### 运行节点 (Run the node)
 
-同样，首先运行执行客户端 **Reth**：
+同样地，你需要先运行执行客户端 **Reth**。
+
+**运行执行客户端**。导航回 `execution` 文件夹并运行此命令：
 
 ```bash
-$ cd ../.. # 返回 ethereum-node2 文件夹
-$ cp ../ethereum-node1/jwt.hex ./jwt.hex # 使用之前生成的 jwt.hex 文件
+$ cd ../.. # 此命令用于返回 ethereum-node2 文件夹
+$ cp ../ethereum-node1/jwt.hex ./jwt.hex # 我们使用之前生成的同一个 jwt.hex 文件
 $ cd execution
 $ reth node --full --http --http.api all --authrpc.jwtsecret=../jwt.hex
 
 ```
 
-接着，在新的终端窗口运行共识客户端 **Lighthouse**：
+如果你看到如下内容，说明一切运行正常：
+
+```text
+2024-06-08T16:58:43.498297Z  INFO Starting reth version="0.2.0-beta.6-dev (ac29b4b73)"
+2024-06-08T16:58:43.498434Z  INFO Opening database path="/Users/alessandromazza/Library/Application Support/reth/mainnet/db"
+2024-06-08T16:58:43.514141Z  INFO Configuration loaded path="/Users/alessandromazza/Library/Application Support/reth/mainnet/reth.toml"
+2024-06-08T16:58:43.514778Z  INFO Database opened
+2024-06-08T16:58:43.514917Z  INFO Pre-merge hard forks (block based):…
+
+```
+
+**运行共识客户端**。现在你应该运行共识客户端 **Lighthouse**。不要关闭运行执行客户端的终端标签页。只需打开一个新的终端窗口或标签页并进入 `consensus` 文件夹：
 
 ```bash
 $ cd ethereum-node2
@@ -450,20 +535,213 @@ $ lighthouse bn \
 
 ```
 
-你现在拥有了一个正在同步的以太坊全节点。
+大功告成！你应该会看到执行客户端和共识客户端开始在终端中输出大量日志数据。
+
+**执行客户端日志：**
+
+```text
+2024-06-08T17:03:03.355648Z  INFO Received headers total=10000 from_block=18458372 to_block=18448373
+2024-06-08T17:03:04.792262Z  INFO Received headers total=10000 from_block=18448372 to_block=18438373
+2024-06-08T17:03:04.800043Z  INFO Received headers total=10000 from_block=18438372 to_block=18428373
+2024-06-08T17:03:04.913377Z  INFO Received headers total=10000 from_block=18428372 to_block=18418373
+
+```
+
+**共识客户端日志：**
+
+```text
+Jun 08 17:03:24.929 INFO New block received        root: 0xa49c057026cea3190df38548d49963e271ebdc4d6f93d2301adc4034d6563113, slot: 9253515
+Jun 08 17:03:29.001 WARN Head is optimistic        execution_block_hash: 0x5a14bfcb9e74c5b3a5121f99ef461ae066262200c269b5d11475274eb78aa7a5, info: chain not fully verified, block and attestation production disabled untilexecution engine syncs, service: slot_notifier
+Jun 08 17:03:29.001 INFO Synced                    slot: 9253515, block: 0xa49c…3113, epoch: 289172, finalized_epoch: 289170, finalized_root: 0xca35…2b06, exec_hash: 0x5a14…a7a5 (unverified), peers: 31, service: slot_notifier
+
+```
+
+现在你已经拥有一个正在同步到链尖的以太坊全节点了。请注意，同步可能需要很长时间（取决于你的硬件和网络连接，可能需要数小时或数天）。
+
+> [!NOTE]
+> 如果你想详细了解本示例中使用的具体命令和 **CLI** 标志（flags），**Reth** 和 **Lighthouse** 的官方文档是最佳查阅地点。
+
+下一节将解释以太坊区块链初始同步所面临的挑战。
+
+> [!TIP]
+> 觉得这些步骤太复杂且令人困惑？但你仍想为网络做贡献，并真正不依赖任何受信任的第三方，运行自己的以太坊全节点？
+> 这里有一个完美的解决方案：**BuidlGuidl Client** 项目。他们创建了一个单行命令，让你能够一键运行以太坊节点。不相信？去亲自看看吧。
+> 另一个选择是使用 **Dappnode**。你可以选择两种不同的方案：
+> 1. 购买一个内置以太坊全节点的即插即用（plug-n-play）设备。
+> 2. 安装 **Dappnode Core** 软件，它可以让你非常轻松地启动以太坊全节点。
+> 
+> 
 
 ---
 
 > [!TIP] **译者注**：
-> 1. **Rust 栈的优势**：**Reth** 和 **Lighthouse** 都采用了 **Rust** 语言。对于后端工程而言，这意味着极高的内存安全性和卓越的并发处理能力。**Reth** 在同步设计上利用了 **Staged Sync**（阶段性同步）架构，其数据读取性能目前处于行业领先地位，非常适合需要高吞吐 **RPC** 服务的场景。
-> 2. **检查点同步 (Checkpoint Sync)**：在运行 **Lighthouse** 时，我们使用了 `--checkpoint-sync-url`。这在后端运维中是一个巨大的飞跃，它允许节点从一个受信任的状态快照开始同步，而不需要从 2020 年的创世区块开始重跑共识，将数天的等待缩短至几分钟。
+> 1. **Rust 技术栈的工程优势**：**Reth** 和 **Lighthouse** 均采用 **Rust** 编写。从后端性能角度看，相比于 **Go (Geth)**，**Reth** 的设计采用了“阶段性同步”（Staged Sync），能更有效地平衡磁盘 **I/O** 和 **CPU** 负载。对于追求极致同步速度和 **RPC** 响应时间的开发者，这是目前的首选组合。
+> 2. **Checkpoint Sync（检查点同步）的魔法**：在运行 **Lighthouse** 命令时，`--checkpoint-sync-url` 是关键。它允许节点直接从一个受信任的状态快照开始，而不是从 2015 年的第一个区块开始重跑所有共识逻辑。这不仅极大地缩短了同步时间（从数天缩短至分钟级），还避免了早期历史数据可能带来的长程攻击风险。
 > 
-> 
+>
+---
+### 以太坊区块链的初始同步 (The First Synchronization of Ethereum-Based Blockchains)
+
+通常在同步以太坊区块链时，你的客户端会下载并验证自最初开始（即创世区块）以来的每一个区块和每一笔交易。虽然可以通过这种方式完成完全同步，但同步过程会耗费极长时间，且对资源要求极高（如果存储速度不够快，它将需要更多的 **RAM** 且同步时间会变得异常漫长）。
+
+以太坊及其多个分支链在 2016 年底曾遭受过 **DoS**（拒绝服务）攻击。受影响的区块链在进行完整同步（full sync）时往往进度缓慢。以以太坊主网为例，一个新的客户端在到达第 2,283,397 号区块之前进度飞快。该区块于 2016 年 9 月 18 日产出，标志着 **DoS** 攻击的开始。从该区块到第 2,700,031 号区块（2016 年 11 月 26 日）之间，交易的验证变得极其缓慢，且高度消耗内存和 **I/O**。在 2016 年当时的硬件环境下，这导致每个区块的验证时间超过了一分钟。以太坊随后通过一系列硬分叉升级解决了被 **DoS** 攻击利用的底层漏洞。这些升级还通过删除由垃圾交易创建的约 2000 万个空账户，对区块链进行了清理。
+
+如果你正在进行全验证同步（full validation sync），你的客户端速度会减慢，验证受 **DoS** 影响的区块可能需要数天甚至更久。幸运的是，大多数以太坊客户端都包含“快速”同步选项，在同步到区块链尖端之前跳过交易的全量验证，只有在到达最新链尖后才恢复全量验证。对于执行客户端，开启快速同步的典型选项是 **Snap Sync**（快照同步）；对于共识客户端，快速同步的选项则是 **Checkpoint Sync**（检查点同步）。
+
+在本教程中，我们默认在执行客户端上使用了 **Snap Sync**，在共识客户端上使用了 **Checkpoint Sync**。唯一例外的是 **Reth**，截至 2025 年 6 月，它尚未支持 **Snap Sync**。
+
+---
+
+> [!TIP] **译者注**：
+> 1. **DoS 攻击的历史债务**：作为后端开发者，理解 2016 年的那段历史有助于你理解为什么以太坊的 `Gasper` 共识和 `EVM` 操作码（如 `EXTCODECOPY`）后来都重新调整了 **Gas** 消耗量。那次攻击本质上是攻击者通过构造极其复杂的指令，让节点在处理极低手续费交易时产生极大的计算开销，这种“非对称成本”是区块链后端设计必须规避的深坑。
+> 2. **Snap Sync vs Checkpoint Sync 的技术本质**：
+> * **Snap Sync**：不再按顺序下载每个区块的交易并回放，而是直接下载当前状态树（State Tree）的“快照”分片。这类似于数据库的“镜像恢复”而非“日志重放”。
+> * **Checkpoint Sync**：利用信标链（Beacon Chain）的弱主观性（Weak Subjectivity），让共识客户端直接信任一个已达成的历史检查点，从而规避了从创世区块开始计算验证者的复杂逻辑。
+
+---
+### JSON-RPC 接口 (The JSON-RPC Interface)
+
+以太坊客户端提供了一个 **API** 和一系列 **RPC**（远程过程调用）命令，这些命令采用 **JSON** 格式进行编码。你通常会看到它被称为 **JSON-RPC API**。从本质上讲，**JSON-RPC API** 是一个允许我们编写程序的接口，通过该接口，我们将以太坊客户端作为访问以太坊网络和区块链的网关。
+
+通常，**RPC** 接口作为 **HTTP** 服务在 `8545` 端口上提供。出于安全考虑，默认情况下它被限制为仅接受来自 `localhost`（你计算机自己的 IP 地址，即 `127.0.0.1`）的连接。
+
+要访问 **JSON-RPC API**，你可以使用专门的库（用你选择的编程语言编写），这些库提供了与每个可用 **RPC** 命令对应的“存根”（stub）函数调用；或者你也可以手动构造 **HTTP** 请求并发送/接收 **JSON** 编码的请求。你甚至可以使用像 `curl` 这样的通用命令行 **HTTP** 客户端来调用 **RPC** 接口。让我们尝试一下。首先，确保你的执行客户端（execution client）已配置并运行。然后，切换到一个新的终端窗口并输入以下命令：
+
+```bash
+$ curl -X POST -H "Content-Type: application/json" --data \
+    '{"jsonrpc":"2.0","method":"web3_clientVersion","params":[],"id":1}' \
+    http://localhost:8545
+
+{"jsonrpc":"2.0","id":1,"result":"Geth/1.14.3-stable/darwin-arm64/go1.22.2"}
+
+```
+
+在这个例子中，我们使用 `curl` 建立了一个指向地址 `http://localhost:8545` 的 **HTTP** 连接。我们已经在运行执行客户端，它在 `8545` 端口上将 **JSON-RPC API** 作为 **HTTP** 服务提供。我们指示 `curl` 使用 **HTTP POST** 方法，并将内容类型标识为 `application/json`。最后，我们将一个 **JSON** 编码的请求作为 **HTTP** 请求的数据部分传递。我们命令行的大部分内容只是在设置 `curl` 以正确建立 **HTTP** 连接。有趣的部分是我们发出的实际 **JSON-RPC** 命令：
+
+`{"jsonrpc":"2.0","method":"web3_clientVersion","params":[],"id":1}`
+
+**JSON-RPC** 请求根据 **JSON-RPC 2.0** 规范进行格式化。每个请求包含四个元素：
+
+* `jsonrpc`：**JSON-RPC** 协议的版本。这必须精确地为 `"2.0"`。
+* `method`：要调用的方法名称。
+* `params`：一个结构化值，持有在调用方法期间使用的参数值。该成员可以省略。
+* `id`：由客户端建立的标识符，如果包含，必须包含字符串、数字或 **NULL** 值。如果包含，服务器必须在响应对象中回复相同的值。该成员用于关联两个对象之间的上下文。
 
 > [!TIP]
-> 觉得这些步骤太复杂？如果你想贡献网络但不想处理这些繁琐的配置，**BuidlGuidl Client** 提供了一键运行节点的脚本。另一个选择是 **Dappnode**，你可以购买预装好全节点的即插即用硬件，或者安装其核心软件来简化部署过程。
+> `id` 参数主要用于在单个 **JSON-RPC** 调用中发出多个请求时，这种做法称为**批处理**（batching）。批处理用于避免为每个请求建立新的 **HTTP** 和 **TCP** 连接所带来的开销。例如，在以太坊语境下，如果我们想通过一个 **HTTP** 连接检索成千上万笔交易，我们就会使用批处理。在批处理时，你为每个请求设置不同的 `id`，然后将其与 **JSON-RPC** 服务器每个响应中的 `id` 进行匹配。实现这一点最简单的方法是维护一个计数器，并为每个请求增加其值。
 
-我可以为您提供关于如何配置 **Systemd** 脚本来实现节点后台运行和自动重启的建议吗？
+我们收到的响应是：
 
+`{"jsonrpc":"2.0","id":1,"result":"Geth/1.14.3-stable/darwin-arm64/go1.22.2"}`
 
+这告诉我们，**JSON-RPC API** 正由 **Geth** 客户端版本 `1.14.3-stable` 提供服务。
+
+让我们尝试一些更有趣的东西。在下一个例子中，我们向 **JSON-RPC API** 查询当前的 **Gas** 价格（单位为 **wei**）：
+
+```bash
+$ curl -X POST -H "Content-Type: application/json" --data \
+    '{"jsonrpc":"2.0","method":"eth_gasPrice","params":[],"id":4213}' \
+    http://localhost:8545
+    
+{"jsonrpc":"2.0","id":4213,"result":"0x1B1717FC7"}
+
+```
+
+响应值 `0x1B1717FC7` 告诉我们，当前的 **Gas** 价格是 **7.27 gwei**（gigawei 或十亿 wei）。如果你和我们一样不习惯十六进制思维，你可以用一点 **Bash** 技巧在命令行中将其转换为十进制：
+
+```bash
+$ echo $((0x1B1717FC7))
+7271972807
+
+```
+
+完整的 **JSON-RPC API** 可以在以太坊维基上进行研究。
+
+> [!TIP]
+> 在本节中，我们使用原始的 `curl` 请求来展示以太坊 **JSON-RPC** 接口。在现实生活中，你可能希望通过一种更好、更符合编程规范的方式来访问它。这就是“库”发挥作用的地方。你可以随意探索这三个最著名且使用最广泛的库：
+> * **ethers.js** (JavaScript/TypeScript)
+> * **web3.py** (Python)
+> * **alloy** (Rust)
+> 
+> 
+
+---
+
+> [!TIP] **译者注**：
+> 1. **无状态与安全加固**：作为后端开发者，必须注意默认的 `8545` 端口没有身份验证机制。在生产环境中，**严禁**直接将此端口暴露在公网。通常的做法是使用 **Nginx** 建立反向代理，并在代理层添加 **基本身份验证**（Basic Auth）或白名单 **IP** 过滤，或者通过 **SSH Tunnel** 进行远程连接。
+> 2. **十六进制与大数处理**：以太坊返回的所有数值（如余额、**Gas** 价格）都是十六进制字符串（带有 `0x` 前缀）。在编写后端逻辑时，千万不要直接将其转换为标准的 64 位整数，因为以太坊的数值高达 256 位（`uint256`），这会超出大多数编程语言原生整数类型的表示范围。务必使用专门的“大数”（BigNumber/BigInt）库来处理这些结果。
+> 
+---
+### 远程以太坊客户端 (Remote Ethereum Clients)
+
+远程客户端仅提供完整客户端功能的一个子集。由于它们不存储完整的以太坊区块链数据，因此设置速度更快，且对数据存储空间的要求极低。
+
+这类客户端通常提供以下一项或多项功能：
+
+* 在钱包中管理私钥和以太坊地址。
+* 创建、签名并广播交易。
+* 使用数据负载（data payload）与智能合约交互。
+* 浏览并与去中心化应用（DApps）交互。
+* 提供指向区块浏览器等外部服务的链接。
+* 进行以太币单位转换并从外部源获取汇率。
+* 将 `Web3` 实例作为 JavaScript 对象注入 Web 浏览器。
+* 使用由其他客户端提供或注入浏览器的 `Web3` 实例。
+* 访问本地或远程以太坊节点上的 **RPC** 服务。
+
+远程客户端通常通过连接到运行在其他地方的全节点（例如，你本地机器上运行的节点、Web 服务器上的节点，或第三方服务器上的节点）来提供功能，而无需同步本地的以太坊区块链副本。
+
+以下是一些最流行的远程客户端及其提供的功能：
+
+#### 移动端（智能手机）钱包 (Mobile Wallets)
+
+大多数生产环境下的移动钱包都作为远程客户端运行，因为智能手机没有足够的资源来运行完整的以太坊客户端。轻客户端（Light clients）仍在开发中，尚未在以太坊中广泛使用。最著名的是 **Helios**，但它目前仍属于实验性软件。
+
+流行的移动钱包包括（仅作为示例列出，不代表对其安全性或功能的认可）：
+
+* **Coinbase Wallet**：支持多种不同链的移动钱包，如以太坊（及所有 **L2**）、**EVM** 兼容的 **L1**、比特币、**Solana**、莱特币和狗狗币。它还可以连接到 Coinbase 账户。
+* **Phantom**：另一款多链钱包，兼容以太坊、**Solana**、比特币和 **Polygon**。
+* **Trust Wallet**：支持一百多个区块链的移动多链钱包，适用于 iOS 和 Android。
+* **Uniswap Wallet**：由 Uniswap 团队开发，仅支持以太坊及其兼容的 **L2** 和 **L1**。这是一款较新的钱包，支持 iOS 和 Android。
+
+#### 浏览器钱包 (Browser Wallets)
+
+许多钱包和 **DApp** 浏览器以 Chrome 或 Firefox 等浏览器的插件或扩展程序形式存在。这些是在浏览器内部运行的远程客户端。较流行的包括：
+
+* **MetaMask**：在第 2 章中介绍过，是一款功能多样的浏览器钱包、**RPC** 客户端和基础合约浏览器。支持 Chrome、Firefox、Opera 和 Brave 浏览器。
+* **Phantom**：也拥有 Web 浏览器钱包，界面设计非常整洁。
+* **Rabby Wallet**：一款新型多链浏览器钱包，支持超过一百个不同的区块链（**EVM** 兼容链）。
+* **Coinbase Wallet**：同样拥有浏览器版本，功能与移动端一致。
+
+#### 硬件钱包 (Hardware Wallets)
+
+大多数移动钱包和浏览器钱包都可以与安全性更高的硬件钱包配合使用。硬件钱包是旨在永不连接互联网的离线设备，专门用于抵御篡改和其他形式的物理攻击，从而提供更高级别的安全性。多家公司正在制造此类设备，其中使用最广泛的两家是 **Ledger** 和 **Trezor**。
+
+---
+
+> [!TIP] **译者注**：
+> 1. **Web3 注入的原理**：从前端和后端交互的角度看，远程客户端（如 **MetaMask**）的核心功能是在浏览器环境中注入 `window.ethereum` 对象。这使得网页端的 **DApp** 能够通过标准的 **JSON-RPC** 协议请求用户对交易进行签名。后端开发者应注意，这种注入模式正逐渐向 **EIP-6963**（多钱包发现规范）演进，以解决多个钱包插件之间的冲突。
+> 2. **硬件钱包的安全边界**：硬件钱包执行的是“盲签”或“解析签名”逻辑。其核心后端逻辑在于：私钥永远存储在受保护的**安全芯片（Secure Element）**中，外部程序只能将未签名的交易数据发送给硬件，由硬件内部完成签名并返回结果。这对于需要管理高价值资产的后端自动化脚本（如多签热钱包控制台）来说，是最终的安全屏障。
+> 
+
+---
+
+### 总结 (Conclusion)
+
+在本章中，我们深入探讨了以太坊客户端。你已经亲自下载、安装并同步了一个客户端，正式成为了以太坊网络的一员。通过在自己的计算机上备份区块链数据，你为整个系统的健康和稳定性做出了贡献。
+
+由于以太坊周边的研发投入巨大，未来将会出现更多新型的以太坊客户端。目前最引人注目的研究领域包括：
+
+* **历史数据裁剪 (History pruning)**：通过裁剪历史数据来降低全节点对存储空间的需求。
+* **Verkle 树与无状态性 (Verkle trees and statelessness)**：使节点能够在不持有完整以太坊状态的情况下验证区块。
+* **zk-EVM**：通过验证零知识证明（Zero-knowledge proof）来确认区块的正确性，而无需重新执行区块中的所有交易。
+
+我们将在后续章节中逐一探索这些概念。但在此之前，我们需要先揭开让这一切成为可能的真正“魔法”：**密码学 (Cryptography)**。
+
+---
+
+> [!TIP] **译者注**：
+> 1. **从“全员重跑”到“全员验证”**：正如我们在本章开头讨论的，当前以太坊最大的开销在于每个节点都要“重复执行”合约。而 **zk-EVM** 的引入将彻底改变这一范式——它将计算过程压缩为一个极小的数学证明。对于后端架构而言，这意味着节点的性能要求将大幅降低，因为“验证”证明的计算复杂度远低于“执行”原始逻辑。
+> 2. **无状态性的工程影响**：**Verkle 树**是实现“无状态以太坊”的关键技术栈。作为后端开发者，一旦无状态性得以实现，我们甚至可以运行一个仅占用几百 MB 内存、几秒钟即可启动完成的“即时全节点”。这将极大地降低 DApp 的基础设施运维门槛，让“人人都能跑节点”真正从愿景变为现实。
+> 
+> 
 ---
