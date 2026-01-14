@@ -410,7 +410,6 @@ receive() external payable {} fallback() external payable {}
 >[!TIP]
 >**译者注**：
 >2300 Gas 陷阱：从后端视角看，transfer 的 2,300 Gas 限制相当于一个极短的“超时配置”。它的初衷是防止重入攻击，但在以太坊多次分叉（如 EIP-1884）调整操作码成本后，这会导致接收方如果是一个稍微复杂的合约（如多签钱包或代理合约）就无法正常接收转账。现代实践更倾向于使用 (bool success, ) = _to.call{value: _withdrawAmount}(""); 这种更通用的方式，并在逻辑上通过“检查-生效-交互”模式（Checks-Effects-Interactions）来保证安全。
-
 >无私钥的库/服务逻辑：这里的 Faucet 合约展示了区块链后端的独特之处——“代码即账户”。作为后端开发者，你会发现不需要数据库授权字段，这段代码本身就定义了谁有权动用这笔钱。require 语句在这里扮演了传统 API 中 Validator 和 Permission Controller 的双重角色，而且是强制在共识层执行的。
 
 ---
