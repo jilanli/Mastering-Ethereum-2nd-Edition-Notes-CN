@@ -15,7 +15,7 @@
 
 以太币的各种面额既有国际单位制 (SI) 的科学名称，也有为了向计算机科学和密码学领域的先驱致敬而命名的通俗名称。下表列出了各种单位、它们的通俗称呼以及 SI 名称。为了与内部价值表示保持一致，下表展示了以 **wei** 为基准的所有面额，其中以太币在第七行显示为 $10^{18}$ **wei**。
 
-[](figure 2-1)
+![Table 2-1](<./images/table 2-1.png>)
 
 
 > [!NOTE]
@@ -84,8 +84,7 @@
 ### MetaMask 入门 (Getting Started with MetaMask)
 
 打开 Google Chrome 浏览器并导航至“扩展程序” (Extensions)。搜索“MetaMask”并点击那个狐狸头像的图标。你应该会看到类似于图 2-1 的界面。
-
-(todo)[figure 2-1]
+![Figure 2-1](<./images/figure 2-1.png>)
 
 验证你下载的是真实的 MetaMask 扩展程序至关重要，因为有时会有人让恶意插件绕过 Google 的过滤机制。真实的插件具备以下特征：
 
@@ -114,20 +113,19 @@
 #### 创建钱包 (Creating a Wallet)
 
 安装好 MetaMask 后，你会在浏览器工具栏中看到一个新图标（狐狸头）。点击它开始操作。系统会要求你接受条款和条件，然后通过输入密码来创建你的新以太坊钱包。
-todo[figure 2-2]
+![Figure 2-2](<./images/figure 2-2.png>)
 
 > [!TIP]
 > 该密码仅用于控制对本地 MetaMask 扩展程序的访问，防止任何能够操作你浏览器的人使用它。这个密码仅存储在你的本地设备上；如果攻击者获取了你的私钥或助记词（Seed Phrase），即使没有这个密码，他们也能访问你地址中的资金。
 
 设置密码后，MetaMask 会为你生成一个钱包，并显示由 12 个英文单词组成的助记词备份 (Mnemonic Backup)。如果 MetaMask 扩展程序或你的电脑出现问题，这些单词可以在任何兼容的钱包中用于恢复资金访问权限。恢复过程不需要之前设置的密码，只需这 12 个单词即可。
-todo [figure 2-3]
-
+![Figure 2-3](<./images/figure 2-3.png>)
 
 > [!TIP]
 > 请在纸上备份你的助记词（12 个单词），备份两份。将这两份纸质备份存放在两个不同的安全位置，例如防火保险箱、上锁的抽屉或银行保险箱。请像对待等值现金一样对待这些纸质备份。任何能够获取这些单词的人都可以窃取你的资金。我们将在第 5 章详细讨论如何保护助记词的安全。
 
 确认已安全存储助记词后，你就能看到以太坊账户的详细信息。
-todo [figure 2-4]
+![Figure 2-4](<./images/figure 2-4.png>)
 
 > [!NOTE]
 > 请勿向本书中显示的地址发送任何资产。出于教学目的，书中的助记词是公开的，任何发送到这些地址的资产都极有可能丢失。
@@ -173,7 +171,7 @@ todo [figure 2-4]
 你的首个任务是为钱包充值。你暂时不会在主网（Main Network）上进行操作，因为真实的以太币（ether）需要花钱购买，且操作它需要更多的经验。目前，你将为钱包加载一些测试网以太币。
 
 点击左上角的以太坊图标，将 MetaMask 切换到 **Sepolia 测试网络 (Sepolia Test Network)**；打开“显示测试网络” (Show test networks) 选项并点击 **Sepolia**。
-todo[figure 2-5]
+![Figure 2-5](<./images/figure 2-5.png>)
 
 > [!NOTE]
 > 测试网以太币没有实际的市场价值，它们仅供开发者和用户在不产生真实经济成本的情况下，测试智能合约和交易功能。
@@ -191,14 +189,13 @@ todo[figure 2-5]
 #### 领取测试币 (Getting Test Ether)
 
 点击“购买” (Buy)，然后导航至列表中的其中一个水龙头 (Faucet)。一旦你决定了要使用哪个水龙头——它们的功能大体一致——你就可以在测试网络上申请以太币，如图 2-6 所示。
-todo[figure 2-6]
+![Figure 2-6](<./images/figure 2-6.png>)
 
 申请测试网以太币的交易 ID (Transaction ID) 如下所示：
 `0x471273d9417e98e7f1adaae61e53a353b2d2313de2e71fc4b6184bf5a63fa0ae`
 
 几秒钟内，这笔新交易就会被 Sepolia 网络处理，你的 MetaMask 钱包将显示 0.05 ETH 的余额（具体金额取决于水龙头愿意发送的额度）。现在，点击浏览器扩展程序中的第一笔交易，然后点击“在区块链浏览器中查看” (View on block explorer)，如图 2-7 所示。这将导航至一个区块链浏览器 (Block Explorer) 网站，该网站允许你可视化并探索区块、地址和交易。
-todo[figure 2-7]
-
+![Figure 2-7](<./images/figure 2-7.png>)
 
 > [!TIP]
 > 交易 ID (TxID) 是交易的唯一哈希值。你可以将此哈希值复制并粘贴到任何兼容的区块浏览器中，以实时跟踪交易的确认状态。
@@ -216,14 +213,14 @@ todo[figure 2-7]
 ### 使用区块链浏览器 (Using a Block Explorer)
 
 MetaMask 使用的是 Etherscan，这是最受欢迎的以太坊区块链浏览器 (Ethereum block explorers) 之一。来自 Sepolia 测试网水龙头的支付交易如图 2-8 所示。
-todo [figure 2-8]
+![Figure 2-8](<./images/figure 2-8.png>)
 该交易已记录在 Sepolia 区块链上，任何人只需搜索交易 ID 即可随时查看。你可以尝试在 `sepolia.etherscan.io` 网站中输入该交易哈希 (Transaction Hash)，亲自体验：
 `0x471273d9417e98e7f1adaae61e53a353b2d2313de2e71fc4b6184bf5a63fa0ae`
 
 ### 从 MetaMask 发送以太币 (Sending Ether from MetaMask)
 
 一旦你从 Sepolia 水龙头收到了第一笔测试币，就可以尝试发送以太币，比如将其发回水龙头或发送到任何其他地址。在本例中，我们将尝试向维塔利克·布特林 (Vitalik Buterin) 发送一些测试网以太币，如图 2-9 所示。
-todo [figure 2-9]
+![Figure 2-9](<./images/figure 2-9.png>)
 
 糟糕！你可能注意到了无法完成这笔交易——MetaMask 提示“余额不足” (`insufficient balance`)。乍一看这很令人费解：你有 0.05 ETH，想要发送 0.05 ETH，为什么 MetaMask 说你资金不足？
 
@@ -251,7 +248,7 @@ $$3 \times 21,000\ \text{gwei} = 63,000\ \text{gwei} = 0.000063\ \text{ETH}$$
 ### 探索地址的交易历史 (Exploring the Transaction History of an Address)
 
 到现在为止，你已经成为使用 MetaMask 发送和接收测试网以太币的专家了。你的钱包已经经历了收支过程。你可以使用 `sepolia.etherscan.io` 区块浏览器查看所有这些交易。你可以复制你的钱包地址并将其粘贴到区块浏览器的搜索框中，也可以让 MetaMask 为你打开该页面。在 MetaMask 的账户图标旁边，你会看到一个显示三个点的按钮。点击它会显示账户相关的选项菜单。
-todo (figure 2-10)
+![Figure 2-10](<./images/figure 2-10.png>)
 
 
 
@@ -259,7 +256,7 @@ todo (figure 2-10)
 > MetaMask 的默认设置并不是非常注重隐私。建议仔细分析“设置 → 安全与隐私”中的选项。一旦你熟悉了 MetaMask 的工作原理，建议将以太坊主网从默认节点更改为使用符合你隐私需求的自定义 **RPC** 节点。最私密的解决方案是拥有自己的节点并连接到其 **RPC** 端口；我们将在第 3 章学习如何实现。
 
 选择“在 Etherscan 上查看账户” (View account on Etherscan)，即可在区块浏览器中打开显示你账户交易历史的网页。
-todo (figure 2-11)
+![Figure 2-11](<./images/figure 2-11.png>)
 
 
 在这里，你可以看到你以太坊地址的完整交易历史。它显示了记录在 **Sepolia** 区块链上、且你的地址作为发送方或接收方的所有交易。点击其中一些交易可以查看更多详情。
@@ -292,9 +289,8 @@ todo (figure 2-11)
 合约和 **EOA** 一样拥有地址。合约也可以像 **EOA** 一样发送和接收以太币。然而，当交易的目的地是一个合约地址时，它会触发该合约在 **EVM** 中运行，并将该交易及其携带的数据作为其输入。除了以太币，交易还可以包含数据，指示运行合约中的哪个特定函数，以及向该函数传递什么参数。通过这种方式，交易可以调用合约内部的函数。
 
 需要注意的是，由于合约账户没有私钥，它无法**主动发起**交易。只有 **EOA** 才能发起交易，但合约可以通过调用其他合约来对交易做出反应，从而构建复杂的执行路径。
-
-todo (figure 2-12)
-[Image 2-12: Comparison between EOA and Contract Account]
+![Figure 2-12](<./images/figure 2-12.png>)
+Figure 2-12: Comparison between EOA and Contract Account
 
 在接下来的几节中，我们将编写第一个合约。然后，你将学习如何使用你的 MetaMask 钱包和 Sepolia 测试网上的测试币来创建、资助并使用该合约。
 
@@ -371,7 +367,7 @@ function withdraw(uint256 _withdrawAmount, address payable _to) public {
 require(_withdrawAmount <= 1000000000000);
 
 它使用 Solidity 内置函数 require 来测试前置条件：即 _withdrawAmount 小于或等于 1,000,000,000,000 wei（这是以太币的基础单位，参见表 2-1），相当于 0.000001 ether。如果调用 withdraw 函数时传入的 _withdrawAmount 大于该金额，这里的 require 函数将导致合约执行停止并因异常而失败。请注意，在 Solidity 中，语句需要以分号结尾。
-todo [table 2-1]
+![Table 2-1](<./images/table 2-1.png>)
 
 这部分合约是我们水龙头的核心逻辑。它通过限制提取额度来控制流出合约的资金流。这是一个非常简单的控制，但可以让你窥见可编程区块链的威力：控制金钱的去中心化软件。
 
@@ -415,26 +411,26 @@ receive() external payable {} fallback() external payable {}
 使用你的 Chrome 浏览器（配合之前安装的 MetaMask 钱包）导航至 **Remix IDE**。
 
 当你首次加载 **Remix** 时，它会以一个名为 `Storage.sol` 的示例合约开始。我们不需要它，所以点击选项卡角落的 `x` 将其关闭，如图 2-12 所示。
-
-图 2-12. 关闭默认示例选项卡 todo [figure 2-12]
+![Figure 2-12](<./images/figure 2-12.png>)
+图 2-12. 关闭默认示例选项卡
 
 
 
 现在，创建一个新文件，如图 2-13 所示。将新文件命名为 `Faucet.sol`。
 
-![figure 2-13](./images/figure 2-13.png)
+![Figure 2-13](<./images/figure 2-13.png>)
 图 2-13. 创建新合约
 
 
 
 打开新选项卡后，复制并粘贴示例 `Faucet.sol` 中的代码，如图 2-14 所示。
-![figure 2-14](./images/figure 2-14.png)
+![Figure 2-14](<./images/figure 2-14.png>)
 图 2-14. 将水龙头示例代码复制到新合约中
 
 
 
 将 `Faucet.sol` 合约加载到 **Remix IDE** 后，导航到 **Remix** 的编译（compile）部分，并点击 **Compile Faucet.sol**。如果一切顺利，你会看到一个绿色框（见图 2-15）。
-![figure 2-15](./images/figure 2-15.png)
+![Figure 2-15](<./images/figure 2-15.png>)
 图 2-15. Remix 成功编译 Faucet.sol 合约
 
 
@@ -455,6 +451,144 @@ receive() external payable {} fallback() external payable {}
 
 
 ---
+### 在区块链上创建合约 (Creating the Contract on the Blockchain)
 
+现在我们有了一个合约，并且已经将其编译成了字节码。接下来，我们需要在以太坊区块链上“注册”这个合约。我们将使用 **Sepolia** 测试网（testnet）来测试我们的合约，因此这就是我们要提交到的区块链。
+
+在区块链上注册合约涉及创建一个特殊的交易，其接收方 `to` 字段为空（null）。这个空的目的地向以太坊区块链发出信号，表明你想要部署一个新合约，而不是向现有地址发送交易。该交易的 `data` 字段则包含已编译的合约字节码。幸运的是，**Remix IDE** 会为你处理所有这些操作，并将交易发送到 **MetaMask**。
+
+首先，切换到 **Run**（运行）选项卡，并在 **Environment**（环境）下拉选择框中选择 **Injected Provider - MetaMask**（注入式 Web3）。这会将 **Remix IDE** 连接到 **MetaMask** 钱包，并以此连接到 **Sepolia** 测试网络。完成此操作后，你可以在 **Environment** 下方看到 **Sepolia**。此外，**Account**（账户）选择框会显示你钱包的地址（见图 2-16）。
+
+![Figure 2-16](<./images/figure 2-16.png>)
+图 2-16. 已选择 Injected Web3 环境的 Remix IDE 运行选项卡
+
+
+
+在你刚刚确认的运行设置下方，就是准备好创建的 `Faucet` 合约。点击图 2-16 中显示的 **Deploy**（部署）按钮。
+
+**Remix** 将构造该特殊的“创建”交易，**MetaMask** 会要求你批准该交易，如图 2-17 所示。你会注意到，合约创建交易中没有包含任何以太币（ether），但它包含了一些字节数据（已编译的合约），并且会消耗一些 **gwei** 作为 **Gas**。点击 **Confirm**（确认/提交）来批准它。
+![Figure 2-17](<./images/figure 2-17.png>)
+图 2-17. MetaMask 显示合约创建交易
+
+
+
+现在你需要等待。合约在 **Sepolia** 上处理大约需要 15 到 30 秒。虽然 **Remix** 看起来似乎没在做什么，但请保持耐心。
+
+一旦合约创建成功，它会出现在 **Run** 选项卡的底部（见图 2-18）。
+![Figure 2-18](<./images/figure 2-18.png>)
+图 2-18. Faucet 合约激活了！
+请注意，`Faucet` 合约现在拥有了自己的地址：**Remix** 将其显示为 `Faucet at 0x4E7…6EA46`（尽管你的地址——即那些随机字母和数字——会与此不同）。
 
 ---
+
+> [!TIP] **译者注**：
+> 1. **空地址部署模式**：在以太坊协议层，部署合约的底层指令实际上是向 `0x0000000000000000000000000000000000000000`（或 `null`）地址发送一笔携带 `data` 的交易。从后端开发角度看，这意味着合约地址并不是预先分配的，而是根据“部署者的地址”和“该地址发出的交易计数器 (`nonce`)”通过哈希算法计算得出的。
+> 2. **异步执行与收据捕获**：提交部署请求后，后端服务不能立即得到合约地址。在工程实践中，我们需要通过 `eth_getTransactionReceipt` 轮询或监听交易凭证。只有当 `status` 为 `0x1`（成功）时，我们才能从收据的 `contractAddress` 字段中获取到真实的合约入口地址。
+
+---
+### 与合约交互 (Interacting with the Contract)
+
+让我们简要回顾一下目前所学的知识。以太坊合约是控制金钱的程序，运行在名为 **EVM** (以太坊虚拟机) 的虚拟机中。它们通过一种特殊的交易创建，该交易提交字节码并记录在区块链上。一旦在区块链上创建，它们就拥有一个像钱包一样的以太坊地址。每当有人向合约地址发送交易时，就会导致合约在 **EVM** 中运行，并将该交易作为输入。发送到合约地址的交易可以包含以太币、数据，或者两者兼有。如果包含以太币，它会被“存入”合约余额。如果包含数据，数据可以指定合约中的具名函数并调用它，同时向函数传递参数。
+
+#### 在区块浏览器中查看合约地址 (Viewing the Contract Address in a Block Explorer)
+
+我们现在有一个记录在区块链上的合约，可以看到它有一个以太坊地址。让我们在 `sepolia.etherscan.io` 区块浏览器中查看一下，看看合约长什么样。在 **Remix IDE** 中，点击合约名称旁边的图标复制合约地址（见图 2-19）。
+![Figure 2-19](<./images/figure 2-19.png>)
+图 2-19. 从 Remix 复制合约地址
+
+
+
+保持 **Remix** 打开；我们稍后会回来。现在，将浏览器导航到 `sepolia.etherscan.io` 并将地址粘贴到搜索框中。你应该能看到该合约地址的交易历史，如图 2-20 所示。
+![Figure 2-20](<./images/figure 2-20.png>)
+图 2-20. 在 Etherscan 区块浏览器中查看 Faucet 合约地址
+
+
+
+#### 为合约注资 (Funding the Contract)
+
+目前，该合约的历史记录中只有一笔交易：合约创建交易。如你所见，该合约也没有以太币（余额为零）。这是因为我们在创建交易中没有向合约发送任何以太币，尽管我们原本可以这样做。
+
+我们的水龙头需要资金！我们的第一个项目将是使用 **MetaMask** 向合约发送以太币。你的剪贴板中应该仍有合约地址（如果没有，请从 **Remix** 再次复制）。打开 **MetaMask** 并向其发送 0.01 ether，操作方式与发送给任何其他以太坊地址完全相同（见图 2-21）。
+![Figure 2-21](<./images/figure 2-21.png>)
+图 2-21. 向合约地址发送 0.01 ether
+
+
+
+稍等片刻，如果你刷新 **Etherscan** 区块浏览器，它将显示另一笔指向该合约地址的交易，并且余额已更新为 0.01 ether。
+
+还记得我们 `Faucet.sol` 代码中的 `receive` 函数吗？它看起来像这样：
+
+`receive() external payable {}`
+
+当你向合约地址发送交易且没有指定调用哪个函数的数据时，它就会调用这个 `receive` 函数。你的交易触发了合约在 **EVM** 中的运行，并更新了其余额。你已经成功为你的水龙头注资了！
+
+#### 从我们的合约中提现 (Withdrawing from Our Contract)
+
+接下来，让我们从水龙头中提取一些资金。要进行提取，我们必须构建一个交易，调用 `withdraw` 函数并向其传递 `_withdrawAmount` 和 `_to` 参数。为了简单起见，**Remix** 将为我们构建该交易，并由 **MetaMask** 呈现供我们批准。
+
+返回 **Remix** 选项卡，查看 **Run**（运行）选项卡上的合约。你应该会看到一个标有 “withdraw” 的红色按钮，旁边有一个标记为 `uint256 _withdrawAmount, address _to` 的输入框（见图 2-22）。
+![Figure 2-22](<./images/figure 2-22.png>)
+图 2-22. Remix 中 Faucet.sol 的 withdraw 函数
+
+
+
+这是 **Remix** 提供的合约界面。它允许我们构建调用合约定义函数的交易。我们将输入 `_withdrawAmount` 和 `_to` 地址，然后点击 **withdraw** 按钮生成交易。
+
+首先，让我们确定 `_withdrawAmount`。我们要尝试提取 0.000001 ether，这是我们合约允许的最大金额。请记住，以太坊中所有的货币值在内部都以 **wei** 计价，我们的 `withdraw` 函数也期望 `_withdrawAmount` 以 **wei** 为单位。我们想要的金额是 0.000001 ether，即 1,000,000,000,000 **wei**（1 后面跟 12 个零）。
+
+对于 `_to` 地址，我们将直接使用 **MetaMask** 中的 `Account 1`。
+
+> [!TIP]
+> 由于 JavaScript 的限制，**Remix** 无法处理大到 $10^{17}$ 的数字。因此，我们将其用引号括起来，以便 **Remix** 将其作为字符串接收并作为 `BigNumber` 处理。如果不加引号，**Remix IDE** 将无法处理并显示 “Error encoding arguments: Error: Assertion failed.”。
+
+在 `_withdrawAmount` 框中输入 `"1000000000000"`（带引号），从 **MetaMask** 复制粘贴你的 `Account 1` 地址，然后点击 **transact** 按钮。（你看到的可能是 **withdraw** 按钮。图 2-23 显示了函数的展开视图；如果你的视图未展开，则按钮名称为 “withdraw”。）
+![Figure 2-23](<./images/figure 2-23.png>)
+图 2-23. 在 Remix 中点击 transact 创建提现交易
+
+
+
+**MetaMask** 将弹出交易窗口供你批准。点击 **Confirm**（确认/提交）将你的提现调用发送到合约（见图 2-24）。
+![Figure 2-24](<./images/figure 2-24.png>)
+图 2-24. 调用 withdraw 函数的 MetaMask 交易
+
+
+
+等待一分钟，然后刷新 **Etherscan** 区块浏览器，查看反映在 `Faucet` 合约地址历史中的交易（见图 2-25）。
+![Figure 2-25](<./images/figure 2-25.png>)
+图 2-25. Etherscan 显示调用 withdraw 函数的交易
+
+
+
+我们现在看到一笔新的交易，目的地是合约地址，价值为 0 ether。合约余额已更改，现在为 0.009999 ether，因为它按要求向我们发送了 0.000001 ether。
+
+但在合约地址历史中我们没有看到 “OUT”（转出）交易。转出的提现去哪了？在合约的地址历史页面上出现了一个名为 **Internal Transactions**（内部交易）的新选项卡。由于 0.000001 ether 的转移是由合约代码发起的，因此它是一个**内部交易**（也称为**消息**，message）。点击该选项卡即可查看（见图 2-26）。
+
+这个“内部交易”是由合约在这一行代码中发送的（来自 `Faucet.sol` 中的 `withdraw` 函数）：
+
+`_to.transfer(_withdrawAmount);`
+![Figure 2-26](<./images/figure 2-26.png>)
+图 2-26. Etherscan 显示从合约转出以太币的内部交易
+
+总结一下：你从 **MetaMask** 钱包发送了一个交易，其中包含调用 `withdraw` 函数的数据指令，参数包括 `_withdrawAmount` 为 0.000001 ether 及其地址。该交易促使合约在 **EVM** 内部运行。当 **EVM** 执行 `Faucet` 合约的 `withdraw` 函数时，它首先调用 `require` 函数并验证请求的金额是否小于或等于允许的最大提现额度 0.000001 ether。然后，它调用 `transfer` 函数向你发送以太币。运行 `transfer` 函数生成了一个内部交易，从合约余额中向你的钱包地址存入了 0.000001 ether。这就是 **Etherscan** 中 **Internal Transactions** 选项卡上显示的那笔交易。
+
+---
+
+> [!TIP] **译者注**：
+> 1. **交易（Transaction）与消息（Message）的区别**：从后端开发角度看，只有 **EOA** 发起的才叫“交易”，它会被包含在区块的交易根中。而合约发起的 `transfer` 被称为“内部交易”或“调用/消息”。它们并不直接存在于区块数据中，而是由节点在执行过程中产生的结果。因此，在编写爬虫或数据分析工具时，仅查询 `eth_getBlockByNumber` 是拿不到这些资金变动记录的，必须通过 `debug_traceTransaction` 或使用支持 Trace 的索引服务（如 Erigon 节点的追踪功能）。
+> 2. **Gas 消耗归属**：注意提现操作虽然是合约“发钱”给你，但发起这笔调用交易的 `gasFee` 依然是由你（调用者）的 **EOA** 支付的。在以太坊的设计逻辑中，合约本身不支付 Gas，谁触发 **EVM** 状态改变，谁就负责买单。这在设计“免费”给用户发放奖励的后端系统时需要特别注意，通常需要引入元交易（Meta-transaction）或账户抽象（Account Abstraction）来优化体验。
+
+---
+###总结 (Conclusion)
+在本章中，你使用 MetaMask 设置了一个钱包，并通过 Sepolia 测试网络上的水龙头（faucet）为其注入了资金。你成功在钱包的以太坊地址中接收了以太币，并将其发送到了另一个地址。
+
+随后，你使用 Solidity 编写了一个 Faucet 合约。你利用 Remix IDE 将合约编译成了 EVM 字节码（bytecode），然后通过 Remix 构建交易，并在 Sepolia 区块链上成功创建了 Faucet 合约。合约创建后拥有了自己的以太坊地址，你向其发送了一些以太币。最后，你构造了一笔交易来调用 withdraw 函数，并成功申请了 0.000001 ether。合约核实了该请求，并通过一笔内部交易（internal transaction）向你发送了 0.000001 ether。
+
+这看起来可能并不复杂，但你已经成功地与运行在去中心化“世界计算机”上、且能够控制金钱的软件进行了交互。
+
+我们将在第 7 章进行更多的 Solidity 智能合约编程练习，并在第 9 章学习最佳实践和安全注意事项。
+>[!TIP] 译者注：
+
+> 1. **全栈交互闭环**：作为后端开发者，回顾本章流程，你实际上完成了一个完整的 DApp 交互闭环：密钥管理 (MetaMask) -> 网络通信 (RPC/Infura) -> 逻辑部署 (Contract Deployment) -> 状态触发 (Function Call)。理解这个闭环是构建复杂去中心化系统的基石。
+
+> 2. **可编程金融的本质**：这个简单的 withdraw 逻辑展示了 DeFi（去中心化金融）的最简原型。在传统后端中，转账需要经过银行清算系统的多次确认和中心化授权；而在以太坊中，转账逻辑被固化在不可篡改的代码中。这种“代码即法律”（Code is Law）的特性，使得开发者能够构建出无需准入、透明且自动执行的金融协议。
+
