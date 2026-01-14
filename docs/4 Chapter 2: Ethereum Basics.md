@@ -250,11 +250,11 @@ $$3 \times 21,000\ \text{gwei} = 63,000\ \text{gwei} = 0.000063\ \text{ETH}$$
 到现在为止，你已经成为使用 MetaMask 发送和接收测试网以太币的专家了。你的钱包已经经历了收支过程。你可以使用 `sepolia.etherscan.io` 区块浏览器查看所有这些交易。你可以复制你的钱包地址并将其粘贴到区块浏览器的搜索框中，也可以让 MetaMask 为你打开该页面。在 MetaMask 的账户图标旁边，你会看到一个显示三个点的按钮。点击它会显示账户相关的选项菜单。
 ![Figure 2-10](<./images/figure 2-10.png>)
 
-
+---
 
 > [!TIP]
 > MetaMask 的默认设置并不是非常注重隐私。建议仔细分析“设置 → 安全与隐私”中的选项。一旦你熟悉了 MetaMask 的工作原理，建议将以太坊主网从默认节点更改为使用符合你隐私需求的自定义 **RPC** 节点。最私密的解决方案是拥有自己的节点并连接到其 **RPC** 端口；我们将在第 3 章学习如何实现。
-
+---
 选择“在 Etherscan 上查看账户” (View account on Etherscan)，即可在区块浏览器中打开显示你账户交易历史的网页。
 ![Figure 2-11](<./images/figure 2-11.png>)
 
@@ -265,6 +265,8 @@ $$3 \times 21,000\ \text{gwei} = 63,000\ \text{gwei} = 0.000063\ \text{ETH}$$
 > 请警惕一种被称为**地址下毒** (Address Poisoning) 的已知攻击手段，攻击者可以在区块浏览器上显示带有伪造地址的交易。虽然区块浏览器可用于快速检查，但显示的信息（尤其是针对零元转账等异常活动）可能并不完全准确。
 
 你可以探索任何地址的交易历史。看看 **Sepolia** 测试网水龙头地址的交易历史（提示：它是你地址中最早那一笔款项的“发送方”地址）。你可以看到从该水龙头发送给你以及其他地址的所有测试币。你看到的每一笔交易都能引导你发现更多的地址和交易。不久，你就会迷失在这个互连数据的迷宫中。公共区块链包含海量信息，所有这些信息都可以通过编程方式进行探索，我们将在未来的示例中看到这一点。
+
+---
 >[!TIP] 译者注：
 
 >隐私与 RPC 泄漏：从后端开发视角看，当你使用默认 RPC 时，你的 IP 地址与你的钱包地址（以及你查询的所有其他地址）在服务商（如 Infura）的日志中是关联的。对于追求高隐私的后端架构，通常会引入 Privacy-Preserving RPC 代理，或者像文中建议的那样，在本地搭建 Geth 或 Erigon 节点并暴露 8545 端口供前端调用。
@@ -395,6 +397,7 @@ receive() external payable {} fallback() external payable {}
 
 在我们的 `fallback` 函数正下方是最后一个闭合大括号，它结束了 `Faucet` 合约的定义。大功告成！
 
+---
 >[!TIP] 译者注：
 
 >2300 Gas 陷阱：从后端视角看，transfer 的 2,300 Gas 限制相当于一个极短的“超时配置”。它的初衷是防止重入攻击，但在以太坊多次分叉（如 EIP-1884）调整操作码成本后，这会导致接收方如果是一个稍微复杂的合约（如多签钱包或代理合约）就无法正常接收转账。现代实践更倾向于使用 (bool success, ) = _to.call{value: _withdrawAmount}(""); 这种更通用的方式，并在逻辑上通过“检查-生效-交互”模式（Checks-Effects-Interactions）来保证安全。
@@ -526,9 +529,10 @@ receive() external payable {} fallback() external payable {}
 
 对于 `_to` 地址，我们将直接使用 **MetaMask** 中的 `Account 1`。
 
+---
 > [!TIP]
 > 由于 JavaScript 的限制，**Remix** 无法处理大到 $10^{17}$ 的数字。因此，我们将其用引号括起来，以便 **Remix** 将其作为字符串接收并作为 `BigNumber` 处理。如果不加引号，**Remix IDE** 将无法处理并显示 “Error encoding arguments: Error: Assertion failed.”。
-
+---
 在 `_withdrawAmount` 框中输入 `"1000000000000"`（带引号），从 **MetaMask** 复制粘贴你的 `Account 1` 地址，然后点击 **transact** 按钮。（你看到的可能是 **withdraw** 按钮。图 2-23 显示了函数的展开视图；如果你的视图未展开，则按钮名称为 “withdraw”。）
 ![Figure 2-23](<./images/figure 2-23.png>)
 图 2-23. 在 Remix 中点击 transact 创建提现交易
@@ -569,6 +573,8 @@ _to.transfer(_withdrawAmount);
 这看起来可能并不复杂，但你已经成功地与运行在去中心化“世界计算机”上、且能够控制金钱的软件进行了交互。
 
 我们将在第 7 章进行更多的 Solidity 智能合约编程练习，并在第 9 章学习最佳实践和安全注意事项。
+
+---
 >[!TIP] 译者注：
 
 > 1. **全栈交互闭环**：作为后端开发者，回顾本章流程，你实际上完成了一个完整的 DApp 交互闭环：密钥管理 (MetaMask) -> 网络通信 (RPC/Infura) -> 逻辑部署 (Contract Deployment) -> 状态触发 (Function Call)。理解这个闭环是构建复杂去中心化系统的基石。
