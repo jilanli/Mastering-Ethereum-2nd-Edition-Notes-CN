@@ -169,12 +169,118 @@ $ cast balance 0x7e41354AfE84800680ceB104c5Fc99eCB98A25f0 --rpc-url https://ethe
 > * ChainList
 
 为了获取一些免费的 Sepolia ETH 代币，你可以使用在线水龙头（Faucet）。我们将使用 Google Cloud Web3 水龙头（如图 6-3 所示），它会提供 0.05 ETH。访问 Ethereum Sepolia Faucet，粘贴你的地址并点击 "Receive 0.05 Sepolia ETH" 按钮。你应该很快就能收到 0.05 ETH。
+![Figure 6-3](<./figure 6-3.png>)
+图 6-3. Google Cloud Web3 水龙头界面
 
-图 6-3. 使用 Google Cloud Web3 水龙头获取测试币 
+在成功申领测试币后，你可以验证余额已从 0 变为 $0.05 \text{ ETH}$（即 $5 \times 10^{16} \text{ Wei}$ ）：
+```Bash
+$ cast balance 0x7e41354AfE84800680ceB104c5Fc99eCB98A25f0 --rpc-url https://ethereum-sepolia-rpc.publicnode.com
+50000000000000000
+```
+太好了！现在我们已完全准备就绪，可以回到关于交易 Nonce 的实验中。
 
+从实际操作的角度来看，Nonce 是指从某个账户发出的**已确认（即已上链）**交易的最新计数。要查询 Nonce，你可以使用 cast 询问区块链。只需打开一个新的终端窗口并输入：
+```Bash
+$ cast nonce 0x7e41354AfE84800680ceB104c5Fc99eCB98A25f0 --rpc-url https://ethereum-sepolia-rpc.publicnode.com
+0
+```
 
+> [!TIP]
+> Nonce 是一个从零开始的计数器，这意味着第一笔交易的 Nonce 为 0。在本例中，由于尚未发送过交易，返回值为 0。此外，RPC 响应总是指向下一个可用的 Nonce。例如，如果地址已发送 10 笔交易（Nonce 0-9），查询将返回 10。
 
+我们可以实际动手尝试发送一笔以太币（ETH）了。我们将向 `vitalik.eth` 发送 0.001 ETH，这是以太坊联合创始人 Vitalik Buterin 的 ENS（以太坊域名服务）地址：
+```Bash
+$ cast send --account example vitalik.eth --value 0.001ether --rpc-url https://ethereum-sepolia-rpc.publicnode.com
+blockHash               0xa1171309fd406e44e86be9695a597d2bf5c728738d140b9958cfb50276c32b1b
+blockNumber             6989355
+contractAddress
+cumulativeGasUsed       18009816
+effectiveGasPrice       11163498011
+from                    0x7e41354AfE84800680ceB104c5Fc99eCB98A25f0
+gasUsed                 21000
+logs                    []
+logsBloom               0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+root
+status                  1 (success)
+transactionHash         0xeb7bb0322858a4e1ed85271a60d2f8353075dc0bcd0c80448ee1d5ca0bb85def
+transactionIndex        60
+type                    2
+blobGasPrice
+blobGasUsed
+authorizationList
+to                      0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045
+```
 
+你的钱包会为你管理的每个地址自动追踪 Nonce。只要你仅从单一终端（例如只用这台电脑上的 cast）发起交易，这个过程非常简单。但假设你正在编写自己的钱包软件或某些需要发起交易的应用程序，你该如何管理 Nonce？
+
+当你创建一笔新交易时，你会按顺序分配下一个 Nonce。但在该交易被确认（即正式入块）之前，它并不会计入链上的 Nonce 总数。
+
+为了观察这一现象，我们可以尝试快速连续执行以下命令：
+```Bash
+$ cast nonce 0x7e41354AfE84800680ceB104c5Fc99eCB98A25f0 --rpc-url https://ethereum-sepolia-rpc.publicnode.com
+10
+$ cast send --account example vitalik.eth --value 0.001ether --async --rpc-url https://ethereum-sepolia-rpc.publicnode.com
+0x85f5b0db44407a6e9252590dc809087a2e232e00a951c9cb8853a109da5ddad4
+$ cast nonce 0x7e41354AfE84800680ceB104c5Fc99eCB98A25f0 --rpc-url https://ethereum-sepolia-rpc.publicnode.com
+10
+$ cast nonce 0x7e41354AfE84800680ceB104c5Fc99eCB98A25f0 --rpc-url https://ethereum-sepolia-rpc.publicnode.com
+11
+```
+如你所见，我们发送的交易并没有立即增加 Nonce 计数；即使在发送交易之后，它依然保持为 10。如果我们等待几秒钟，让网络通信稳定下来并将交易包含在区块中，再次调用 Nonce 查询才会返回预期的数字 11。
+
+> [!NOTE]
+> 请留意 `cast send` 命令中使用的 `--async` 标志：如果你不使用它，`cast` 会在终端中持续阻塞，直到交易在区块内得到确认。使用该标志后，它会将交易推送到网络并立即返回交易哈希（Transaction Hash），而无需等待入块。
+
+现在让我们看一个不同的例子：
+```Bash
+$ cast nonce 0x7e41354AfE84800680ceB104c5Fc99eCB98A25f0 --rpc-url https://ethereum-sepolia-rpc.publicnode.com
+11
+$ cast send --account example vitalik.eth --value 0.001ether --async --rpc-url https://ethereum-sepolia-rpc.publicnode.com
+0x63188aa73247ffe06388a9adf399fa715e42fbc37ca53f77642a7860c80feb9d
+$ cast nonce 0x7e41354AfE84800680ceB104c5Fc99eCB98A25f0 --rpc-url https://ethereum-sepolia-rpc.publicnode.com
+11
+$ cast rpc eth_getTransactionCount 0x7e41354AfE84800680ceB104c5Fc99eCB98A25f0 pending --rpc-url https://ethereum-sepolia-rpc.publicnode.com
+"0xc"
+$ cast nonce 0x7e41354AfE84800680ceB104c5Fc99eCB98A25f0 --rpc-url https://ethereum-sepolia-rpc.publicnode.com
+12
+```
+
+在发送交易之前，我们的 Nonce 计数是 11；发送交易后，我们立即查询新的 Nonce。正如从前一个示例中所预期的，由于交易仍处于内存池（Mempool）中待处理，尚未被包含在区块内，因此 Nonce 尚未更新。然而，我们使用了一种新的查询方式，它实际上能够获取到真实的 Nonce 数量，即便交易尚未得到确认（返回的 0xc 是十六进制的 12）。几秒钟后，交易被添加到区块中，此时调用 cast nonce 就会返回新的正确值。
+
+`cast nonce` 与 `eth_getTransactionCount pending` 之间的区别很简单：前者仅考虑已确认的交易（即已入块的交易），而后者则尝试包含那些仍在内存池中待处理（Pending）的交易。
+
+> [!Warning]
+> 在使用 eth_getTransactionCount pending 来统计待处理交易时务必小心。事实上，尽管它试图返回一个地址真实的 Nonce 值，但没有任何办法能百分之百确定内存池中是否还隐藏着其他等待确认的待处理交易。
+>
+> 公共内存池（Public Mempool）并不是一个全球统一的实体。 每个节点都有自己的内存池：这是一种用于存放待处理交易的动态仓库，在它们被正式确认上链前进行临时保存。每个节点都可以通过设置不同的规则（例如不同的最低 Gas 价格限制或账户限制）来定制自己接受或拒绝新交易的逻辑。虽然 RPC 服务商拥有庞大的节点网络，并且理论上应该对所有待处理交易拥有（近乎）完整的视角，但你仍应警惕，不要将该返回值视为 100% 准确。
+
+### Nonce 间隙、重复 Nonce 与确认（Gaps, Duplicates, and Confirmation）
+如果你是通过编程方式创建交易，追踪 nonce 就变得至关重要，特别是当你试图从多个独立的进程同时发起交易时。
+
+以太坊网络根据 nonce 严格顺序地处理交易。这意味着，如果你发送了一笔 nonce 为 0 的交易，接着又发送了一笔 nonce 为 2 的交易，那么第二笔交易不会被包含在任何区块中。它会被存储在内存池（mempool）中，此时以太坊网络会等待缺失的 nonce 出现。所有节点都会假设缺失的 nonce 只是被延迟了，而 nonce 为 2 的交易只是乱序到达了。
+
+如果你随后发送了缺失的 nonce 1，那么两笔交易（nonce 1 和 2）都将被处理并包含在区块中（当然前提是它们合法）。一旦你填补了间隙，网络就能打包之前保存在内存池中的乱序交易。
+
+这意味着，如果你按顺序创建了几笔交易，而其中一笔没有被正式包含在区块中，那么所有后续交易都会被“卡住”，等待那个缺失的 nonce。一笔交易可能因为无效或 gas 不足而产生无意的“间隙”。要让交易重新流动，你必须发送一笔具有缺失 nonce 的有效交易。你同样需要警惕：一旦这个“缺失”的 nonce 被网络验证，所有已广播的后续 nonce 交易都会依次生效——撤回一笔已发送的交易是不可能的！
+
+另一方面，如果你不小心重复了 nonce —— 例如发送了两笔具有相同 nonce 但收款人或金额不同的交易 —— 那么其中一笔会被确认，另一笔会被拒绝。哪一笔被确认取决于它们到达第一个接收它们的验证节点的顺序 —— 也就是说，这具有相当大的随机性。
+
+如你所见，追踪 nonce 是必不可少的。如果你的应用程序无法正确管理这一过程，就会遇到麻烦。遗憾的是，正如我们将在下一节看到的，如果你尝试并发执行此操作，情况会变得更加复杂。
+
+### 并发、交易发起与 Nonce（Concurrency, Transaction Origination, and Nonces）
+并发是计算机科学中一个复杂的方面，它有时会出人意料地出现，尤其是在像以太坊这样去中心化和分布式的实时系统中。
+
+简单来说，并发是指多个独立系统同时进行计算。这些系统可以在同一个程序中（如多线程）、同一个 CPU 上（如多进程），或者在不同的计算机上（如分布式系统）。从定义上讲，以太坊是一个允许操作（节点、客户端、DApps）并发的系统，但通过共识机制强制执行单体状态（Singleton State）。
+
+现在，想象一下你有多个独立的钱包应用程序，它们正在从同一个或多个地址生成交易。这种情况的一个例子是交易所处理来自其热钱包（hot wallet）的提现。理想情况下，你会希望有多台计算机处理提现，这样它就不会成为瓶颈或单点故障。然而，这很快就会变得棘手，因为多台计算机产生提现会导致一些棘手的并发问题，其中最核心的就是 nonce 的选择。多台从同一个热钱包账户生成、签名并广播交易的计算机如何进行协调？
+
+你可以使用一台计算机按先来后到的顺序，为负责签名交易的计算机分配 nonce。然而，这台计算机现在成了单点故障（single point of failure）。更糟的是，如果分配了几个 nonce，但其中一个由于处理该交易的计算机发生故障而从未被使用，那么所有后续交易都会被卡住。
+
+另一种方法是生成交易但不分配 nonce（因此不签名——请记住，nonce 是交易数据的组成部分，因此必须包含在验证交易的数字签名中）。然后，你可以将它们排队发送到一个负责签名并追踪 nonce 的单一节点。但同样，这会成为流程中的一个瓶颈：在高负载下，签名和追踪 nonce 的部分最容易发生拥塞，而生成未签名交易的部分其实并不真正需要并行化。你虽然实现了一定程度的并发，但在流程的关键部分却缺乏并发能力。
+
+最终，这些并发问题，加上在独立进程中追踪账户余额和交易确认的难度，迫使大多数实现方案趋向于规避并发并创造瓶颈，例如使用单一进程处理交易所的所有提现交易，或者设置多个完全独立工作的热钱包进行提现，仅需定期进行余额重平衡（rebalanced）。
+
+## Transaction Gas
 ---
 [^1]: 也可以理解为经典交易，不过在以太坊社区中多用遗留交易。
 [^2]: 可以简单地理解为交易计数，但是社区更喜欢直接引用原词。
