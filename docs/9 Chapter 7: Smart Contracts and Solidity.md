@@ -306,4 +306,296 @@ Solidity 智能合约具有三种类型的变量作用域：
 ### 预定义全局变量与函数
 当合约在 EVM 中执行时，它可以访问一小组全局对象。这些对象包括 block（区块）、msg（消息）和 tx（交易）。此外，Solidity 还将许多 EVM 操作码（opcodes）公开为预定义函数。在本节中，我们将检查你可以从 Solidity 智能合约内部访问的变量和函数。
 
+**交易/消息调用上下文（Transaction/message call context）**
+
+msg 对象是指发起本次合约执行的交易调用（由 EOA 发起）或消息调用（由合约发起）。它包含了一系列有用的属性：
+
+**msg.sender**
+
+我们已经使用过这个属性了。它代表发起本次合约调用的地址，但不一定是指发送交易的原始 EOA（外部持有账户）。如果我们的合约是由一个 EOA 交易直接调用的，那么 msg.sender 就是签署该交易的地址；但在其他情况下（如通过合约调用合约），它将是一个合约地址。
+
+**msg.value**
+
+本次调用所发送的 Ether 数量（以 wei 为单位）。
+
+**msg.data**
+
+进入我们合约本次调用的数据负载（Data Payload）。
+
+**msg.sig** 
+
+数据负载的前四个字节，即函数选择器（Function Selector）。
+
+> [!Note]
+> 每当一个合约调用另一个合约时，msg 对象所有属性的值都会发生变化，以反映新调用者的信息。唯一的例外是 delegatecall 函数，它会在原始的 msg 上下文（Context）中运行另一个合约或库（Library）的代码。
+
+**交易上下文 (Transaction context)**
+
+tx 对象提供了一种访问交易相关信息的方法：
+
+**tx.gasprice**
+
+发起调用的交易中的 Gas 价格。
+
+**tx.origin**
+
+该交易的原始 EOA（外部持有账户）地址。
+
+**区块上下文 (Block context)**
+
+block 对象包含当前区块的以下信息：
+
+**block.basefee**
+
+当前区块的基础费用（Base Fee）。这是一个动态调整的值，代表交易被纳入区块所需的最低 Gas 费用。
+
+**block.blobbasefee**
+
+Blob 交易的动态调整基础费用。这是作为以太坊 EIP-4844 扩容改进方案的一部分引入的，旨在高效处理大数据。
+
+**block.chainid**
+
+当前正在构建的区块链的唯一标识符（链 ID）。
+
+**block.prevrandao**
+
+由信标链（Beacon Chain）提供的随机数。该值源自前一个区块的随机数信标（Randomness Beacon）。它可用于需要随机数的智能合约，但仅限非敏感操作，因为它在一定程度上仍可被操纵。
+
+**block.coinbase**
+
+当前区块费用和区块奖励的接收者地址（通常指构建者或验证者地址）。
+
+**block.difficulty**
+
+在 Paris 升级（合并/The Merge）之前的 EVM 版本中，指当前区块的 PoW 难度。对于之后采用 PoS 共识模型的版本，它表现为 block.prevrandao 的弃用别名。
+
+**block.gaslimit**
+
+当前区块内所有交易所允许消耗的 Gas 总量上限（区块 Gas 限制）。
+
+**block.number**
+
+当前区块高度（区块号）。
+
+**block.timestamp**
+
+区块中的时间戳（自 Unix 纪元以来的秒数）。
+
+**地址对象 (Address object)**
+
+任何地址（无论是作为输入传入还是从合约对象强制转换而来）都拥有一系列属性和方法：
+
+**address.balance**
+
+该地址的余额（以 wei 为单位）。例如，当前合约的余额为 address(this).balance。
+
+**address.code**
+
+存储在该地址的合约字节码（Bytecode）。对于 EOA 地址，返回空字节数组。
+
+**address.codehash**
+
+该地址合约字节码的 Keccak-256 哈希值。
+
+**address.transfer(amount)**
+
+向该地址转账指定金额（以 wei 为单位），如果出错则抛出异常。我们在 Faucet 示例中曾将此函数作为 msg.sender 地址的方法使用，即 msg.sender.transfer。
+
+**address.send(amount)**
+
+类似于 transfer，但出错时不会抛出异常，而是返回 false。务必记得检查 send 的返回值。
+
+**address.call(payload)**
+
+底层 CALL 函数。可以使用数据负载（Payload）构建任意的消息调用。出错时返回 false。注意：接收者可能（无意或恶意地）耗尽你所有的 Gas，导致你的合约因 **OOG（Gas 耗尽）**异常而停滞；务必检查 call 的返回值。
+
+**address.delegatecall(payload)**
+
+底层 DELEGATECALL 函数。类似于 call，但上下文保留在当前合约中（逻辑由目标地址提供）。对于实现代理模式（Proxy Pattern）特别有用。出错时返回 false。警告：仅限高级用途！
+
+**address.staticcall(payload)**
+
+底层 STATICCALL 函数。类似于 call 但处于只读模式，意味着被调用的函数不能修改任何状态或发送 Ether。出错时返回 false。
+
+> [!Note]
+> address.send() 和 address.transfer() 都会固定转发 2,300 Gas，这可能不足以执行回退逻辑（Fallback Logic）。随着 EIP-7702 的正式实施，社区已不再推荐使用这两个函数，转而提倡使用更具灵活性的 address.call()。更多相关内容将在第 9 章详细讨论。
+
+### 内置函数
+其他值得注意的函数包括：
+
+**addmod, mulmod**
+
+用于模加法和模乘法。例如，addmod(x, y, k) 计算 $(x + y) \% k$。
+
+**keccak256, sha256, ripemd160**
+
+使用各种标准哈希算法计算哈希值的函数。
+
+**ecrecover**
+
+从签名中恢复用于签署消息的地址。
+
+**selfdestruct(recipient_address)**
+
+已弃用。用于删除当前合约并将账户中剩余的 Ether 发送到接收者地址。在 EIP-6780 实施后，只有当 selfdestruct 指令与合约创建在同一笔交易中被调用时，才会执行删除操作。在其他所有情况下，资金会被转移，但合约及其状态不会被清除。
+
+**this**
+
+指代当前合约，可显式转换为 Address 类型，以获取当前执行合约账户的地址：`address(this)`。
+
+**super**
+
+在继承体系中高一级别的合约。
+
+**gasleft**
+
+当前执行上下文中剩余的 Gas 数量。
+
+**blockhash(block_number)**
+
+由区块号指定的区块哈希值；仅可获取最近的 256 个区块。blobhash(index)：与当前交易关联的第 index 个 Blob 的哈希值。
+
+
+### 合约定义
+Solidity 的主要数据类型是合约（contract）；我们的 Faucet 示例简单地定义了一个合约对象。与面向对象语言中的任何对象类似，合约是一个包含数据和方法的容器。
+
+除了合约之外，Solidity 还提供了另外两种与之相似的对象类型：
+
+**接口 (interface)**
+
+接口定义的结构与合约完全一致，不同之处在于其中不定义任何函数体——仅对函数进行声明。这类声明通常被称为存根（stub）；它会告知你函数的参数和返回类型，而不包含任何实现逻辑。接口规定了合约的“形状（shape）”；当接口被继承时，子合约必须实现接口中声明的每一个函数。
+
+**库 (library)**
+
+库合约旨在仅部署一次，并由其他合约通过 `delegatecall` 方法调用（参见“地址对象”部分）。
+
+### 函数
+在合约内部，我们定义的函数可以由 EOA 交易或其他合约调用。在我们的 Faucet 示例中，有两个函数：withdraw（提款）和 receive（接收）。
+
+Solidity 中声明函数的语法如下：
+```Solidity
+function FunctionName([parameters]) {public|private|internal|external} [virtual|override]
+[pure|view|payable] [modifiers] [returns (return types)]
+```
+让我们逐一查看这些组成部分：
+
+**FunctionName（函数名）**
+
+函数的名称，用于在来自 EOA、其他合约、甚至同一合约内部的交易中调用该函数。
+
+**parameters（参数）**
+
+紧跟在名称之后，我们需要指定必须传递给函数的参数及其名称和类型。在 Faucet 示例中，我们定义了 uint withdrawAmount 作为 withdraw 函数的唯一参数。
+
+下一组关键字（public, private, internal, external）指定了函数的可见性：
+
+** public** 
+
+默认选项（但在现代 Solidity 中必须显式指定）。这类函数可以由其他合约、EOA 交易或在合约内部调用。
+
+**private**
+
+私有函数。类似于内部函数，但不能被派生合约（Derived Contracts）调用。
+
+**internal**
+
+内部函数。仅能从合约内部访问——不能被其他合约或 EOA 交易调用。但它们可以被派生合约（继承自该合约的合约）调用。
+
+**external**
+
+外部函数。类似于公共函数，但它们不能从合约内部直接调用，除非显式加上 this. 前缀。
+
+请记住，internal 和 private 这两个术语有时会产生误导。合约内部的任何函数或数据在公共区块链上始终是可见的（Visible），这意味着任何人都可以查看其代码或数据。这里描述的关键字仅影响函数何时以及如何被调用（Called）。
+
+> [!Note]
+> 提示：函数可见性不应与状态变量可见性混淆！尽管它们共享关键字和语义，但却是两回事。状态变量的可见性是可选的，而函数的可见性必须显式定义。
+
+第二组关键字（pure, view, payable）会影响函数的行为：
+
+**pure**
+
+纯函数。既不读取也不写入存储（Storage）中的任何变量。它只能操作参数并返回数据，而不引用任何存储数据或区块链状态。纯函数旨在鼓励无侧重影响或状态的声明式编程。
+
+**view**
+
+视图函数。承诺不修改任何状态。编译器不会强制执行 view 修饰符（译者注：现代版本编译器已强制检查），如果未遵守则会发出警告。
+
+**payable**
+
+可支付函数。指可以接收付款的函数。未声明为 payable 的函数将拒绝转入的资金。由于 EVM 的设计决定，有两个例外：Coinbase 付款和 SELFDESTRUCT 继承，即使回退函数未声明为 payable，这些款项也会被支付。
+
+现在让我们探索两个特殊函数的行为：
+
+**receive()**
+
+接收函数。它是合约接收 Ether 的入口。当合约收到一个 calldata 为空的调用时触发，通常见于普通的 Ether 转账（如使用 .send() 或 .transfer()）。其声明方式为 receive() external payable { ... }。它不能有参数或返回值，但可以是 virtual 的，可以 override（重写），并带有修饰符。
+
+**fallback()**
+
+回退函数。当调用的函数签名与合约中任何其他函数都不匹配时执行。我们可以使用 `fallback() external [payable]` 或 `fallback(bytes calldata input) external [payable] returns (bytes memory output)` 进行声明。如果包含输入参数，它将包含发送给合约的完整数据（等同于 msg.data）。目前，它主要用于实现代理模式（Proxy Pattern）：一种支持智能合约可升级的设计模式。
+
+> [!Note]
+> 如果合约缺少 receive 函数，但定义了声明为 payable 的 fallback 函数，那么在收到转账时将执行 fallback 函数。如果合约既没有 receive 函数，也没有 payable 的 fallback 函数，则该合约无法接收以太币，交易将因异常而回滚（revert）。
+
+### 合约构造函数
+有一个特殊的函数仅会被使用一次。当合约被创建时，如果存在构造函数（constructor），它会运行该函数以初始化合约的状态。构造函数与合约创建处于同一笔交易中。构造函数是可选的；你会注意到我们的 Faucet 示例中并没有定义它。
+
+构造函数通过 constructor 关键字进行指定。其形式如下：
+```Solidity
+pragma 0.8.26
+// SPDX-License-Identifier: GPL-3.0
+contract MEContract {
+ address owner;
+ constructor () { // This is the constructor
+  owner = msg.sender;
+ }
+}
+```
+合约的生命周期始于由 EOA（外部持有账户）或合约账户发起的创建交易（Creation transaction）。如果定义了构造函数，它将作为合约创建过程的一部分被执行，以便在创建时初始化合约状态；执行完毕后，构造函数代码会被丢弃。
+
+> [!Note]
+> 构造函数也可以标记为 payable。如果你希望在合约创建交易中同时发送 ETH，这一点是必需的。如果构造函数未声明为 payable，那么在部署期间发送任何 ETH 都会导致交易回滚（revert）。
+
+### 函数修饰器 (Function Modifiers)
+Solidity 提供了一种特殊类型的函数，称为函数修饰器（function modifier）。你只需在函数声明中添加修饰器名称，即可将其应用于该函数。修饰器最常用于创建适用于合约内多个函数的先决条件（Conditions）。在我们的 destroy 函数中已经使用了一条访问控制语句。现在，让我们创建一个函数修饰器来表达这一条件：
+```Solidity
+modifier onlyOwner {
+ require(msg.sender == owner);
+ _;
+}
+```
+这个名为 onlyOwner 的函数修饰器为其所修饰的任何函数设置了一个条件：要求合约中存储的 owner（所有者）地址必须与交易的 msg.sender 地址一致。这是访问控制（Access Control）的基本设计模式，它确保只有合约的所有者才能执行带有 onlyOwner 修饰器的函数。
+
+你可能已经注意到，我们的函数修饰器中有一个独特的语法“占位符”：下划线后跟一个分号 (_;)。这个占位符会被所修饰函数的实际代码所替换。从本质上讲，修饰器是“包装（Wrapped around）”在被修饰函数之外的，并将其代码放置在下划线字符所在的位置。
+
+要应用修饰器，只需将其名称添加到函数声明中即可。一个函数可以应用多个修饰器；它们会按照声明的顺序执行，中间以逗号分隔。
+
+让我们定义一个 changeOwner 函数来演示如何使用 onlyOwner 修饰器：
+```Solidity
+function changeOwner(address newOwner) public onlyOwner {
+ require(newOwner != address(0), "New owner address not set");
+ owner = newOwner;
+}
+```
+函数修饰器的名称（onlyOwner）紧随关键字 public 之后，这表明 changeOwner 函数受到了 onlyOwner 修饰器的约束。本质上，你可以将其理解为“只有所有者（Owner）才能设置新的所有者地址”。在实际执行中，生成的代码等同于将 onlyOwner 的逻辑“包装”在 changeOwner 的代码之外。
+
+函数修饰器是一种极其有用的工具，因为它们允许我们为函数编写先决条件（Preconditions）并一致地应用它们，从而使代码更易于阅读，并因此更易于进行安全性审计（Audit）。虽然它们最常用于访问控制，但其功能非常多样，还可以用于许多其他用途。
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
