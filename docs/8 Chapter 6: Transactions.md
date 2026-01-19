@@ -504,6 +504,464 @@ $ cast send --account example $CONTRACT_ADDRESS \
 
 #### 创建数字签名
 在以太坊的 ECDSA 实现中，被签名的“消息”是交易，或者更准确地说，是交易中经过 RLP 编码数据的 Keccak-256 哈希值。签名密钥是 EOA 的私钥。其结果就是签名：
+```
+Sig = Fsig (Fkeccak256 (m), k)
+```
+其中：
+* k 是签名私钥
+* m 是经过 RLP 编码的交易
+* Fkeccak256 是 Keccak-256 哈希函数
+* Fsig 是签名算法
+* Sig 是生成的签名
+函数 Fsig 生成的签名 Sig 由两个值组成，通常被称为 r 和 s：
+```
+Sig = (r, s)
+```
+#### 验证签名（Verifying the signature）
+要验证签名，你必须拥有签名（r 和 s）、序列化后的交易，以及与创建该签名时所用私钥相对应的公钥。从本质上讲，签名的验证意味着：只有生成该公钥的私钥持有者，才能针对这笔交易产生这个签名。
+
+签名验证算法接受消息（在我们的用途中即交易的哈希值）、签名者的公钥以及签名（r 和 s 值），如果该签名对于此消息和公钥是有效的，算法则返回 true（真）。
+
+#### ECDSA 数学原理（ECDSA Math）
+正如前文所述，签名是由数学函数 Fsig 生成的，该函数产生由 r 和 s 两个值组成的签名。在本节中，我们将更详细地探讨函数 Fsig。签名算法首先以密码学安全的方式生成一个**临时**（ephemeral）私钥。这个临时密钥用于计算 r 和 s 的值，以确保攻击者在观察以太坊网络上的签名交易时，无法推算出发送者真正的私钥。
+
+正如我们在第 4 章中所知，临时私钥用于推导出相应的（临时）公钥，因此我们有：
+* 一个密码学安全的随机数 q，用作临时私钥。
+* 相应的临时公钥 Q，由 q 和椭圆曲线生成点 G 生成。
+
+数字签名的 r 值即为临时公钥 Q 的 x 坐标。
+随后，算法计算签名的 s 值，满足：
+$$s \equiv q^{-1} (Keccak256(m) + r \cdot k) \pmod{p}$$
+
+其中：
+* q 是临时私钥
+* r 是临时公钥的 x 坐标
+* k 是签名者（EOA 所有者）的私钥
+* m 是交易数据
+* p 是椭圆曲线的素数阶
+
+验证是签名生成函数的逆过程，使用 r 和 s 值以及发送者的公钥来计算出一个值 Q，该值是椭圆曲线上的一个点（即创建签名时使用的临时公钥）。步骤如下：
+1. 检查所有输入是否格式正确。
+2. 计算 $w = s^{-1} \pmod{p}$ 。
+3. 计算 $u_1 = Keccak256(m) \cdot w \pmod{p}$ 。
+4. 计算 $u_2 = r \cdot w \pmod{p}$ 。
+5. 最后，计算椭圆曲线上的点 $Q \equiv u_1 \cdot G + u_2 \cdot K \pmod{p}$ 。
+其中：
+* r 和 s 是签名值
+* K 是签名者（EOA 所有者）的公钥
+* m 是被签名的交易数据
+* G 是椭圆曲线生成点
+* p 是椭圆曲线的素数阶
+
+如果计算出的点 Q 的 x 坐标等于 r，那么验证者就可以断定该签名是有效的。请注意，在验证签名的过程中，私钥既不为人所知，也不会被泄露。
+
+> [!TIP]
+> ECDSA 必然涉及相当复杂的数学运算；完整的解释超出了本书的范围。网上有许多逐步指导：搜索“ECDSA explained”或尝试参考相关教程。
+>
+> **译者** 也可以看下我自己总结的密码学笔记哦。
+
+## 交易签名的实际操作（Transaction Signing in Practice）
+要产生一笔有效的交易，发起者必须使用 ECDSA 算法对消息进行数字签名。当我们说“对交易签名”时，实际上是指“对 RLP 序列化交易数据的 Keccak-256 哈希值进行签名”。签名是作用于交易数据的哈希值，而不是交易本身。
+
+在以太坊中签名一笔交易，发起者必须执行以下步骤：
+1. 创建交易数据结构，包含该特定交易类型所需的所有字段。
+2. 产生 RLP 编码的序列化消息，将交易数据结构转化为二进制流。
+3. 计算该序列化消息的 Keccak-256 哈希值。
+4. 计算 ECDSA 签名，使用发起方 EOA 的私钥对该哈希值进行签名。
+5. 将计算出的 ECDSA 签名分量 $v$、$r$ 和 $s$ 添加到交易中。
+
+特殊的签名变量 v 指示了两件事：链 ID（Chain ID）和用于帮助 `ecrecover` 函数校验签名的恢复标识符。在非遗留交易（non-legacy transactions）中，v 变量不再编码链 ID，因为链 ID 已作为交易本身的组成项之一被直接包含。有关链 ID 的更多信息，请参阅“使用 EIP-155 创建原始交易”。恢复标识符用于指示公钥 y 分量的奇偶性（详见“签名对称前缀值 (v) 与公钥恢复”, "The Signature Prefix Value (v) and Public Key Recovery"）。
+
+> [!NOTE]
+> 在区块高度 2,675,000 处，以太坊实施了伪龙（Spurious Dragon）硬分叉。在多项变更中，该分叉引入了一种新的签名方案，其中包含了交易重放保护（防止原本发送至某个网络的交易在其他网络上被重复执行）。这一新签名方案在 EIP-155 规范中定义。此项变更影响了交易的形式及其签名，因此必须特别注意三个签名变量中的第一个（即 v），它采用两种形式之一，并指示了被哈希的交易消息中包含哪些数据字段。
+
+### 原始交易的创建与签名（Raw Transaction Creation and Signing）
+在本节中，我们将使用 ethers.js 库来创建一笔原始交易（Raw Transaction）并对其进行签名。示例 6-1 展示了通常在钱包或代表用户签名交易的应用内部所使用的函数。
+
+示例 6-1. 创建并签名一笔原始以太坊交易
+```js
+// Load requirements first:
+//
+// npm install ethers
+//
+// Run with: node eip1559_tx.js
+import { ethers } from "ethers";
+
+// Create provider with your RPC endpoint
+const provider = new ethers.JsonRpcProvider("https://ethereum-sepolia-rpc.publicnode.com");
+
+// Private key
+const privKey = "0xd6d2672c6b4489e6bcd4e93b9af620fa0204b639b7d7f93765479c0846be0b58";
+
+// Create a wallet instance
+const wallet = new ethers.Wallet(privKey);
+
+// Get nonce and create transaction data
+const txData = {
+  nonce: await provider.getTransactionCount(wallet.address), // Get nonce from provider
+  to: "0xb0920c523d582040f2bcb1bd7fb1c7c1ecebdb34", // Receiver address
+  value: ethers.parseEther("0.0001"), // Amount to send (0.0001 ETH here)
+  gasLimit: ethers.toBeHex(0x30000), // Gas limit
+  maxFeePerGas: ethers.parseUnits("100", "gwei"), // Max fee per gas
+  maxPriorityFeePerGas: ethers.parseUnits("2", "gwei"), // Max priority fee
+  data: "0x", // Optional data
+  chainId: 11155111, // Sepolia chain ID
+};
+
+// Calculate RLP-encoded transaction hash (pre-signed)
+const unsignedTx = ethers.Transaction.from(txData).unsignedSerialized;
+console.log("RLP-Encoded Tx (Unsigned): " + unsignedTx);
+const txHash = ethers.keccak256(unsignedTx);
+console.log("Tx Hash (Unsigned): " + txHash);
+
+// Sign the transaction
+async function signAndSend() {
+  // Sign the transaction with the wallet
+  const signedTx = await wallet.signTransaction(txData);
+  console.log("Signed Raw Transaction: " + signedTx);
+
+  // Send the signed transaction to the Ethereum network
+  const txResponse = await provider.broadcastTransaction(signedTx);
+  console.log("Transaction Hash: " + txResponse.hash);
+
+  // Wait for the transaction to be mined
+  const receipt = await txResponse.wait();
+  console.log("Transaction Receipt: ", receipt);
+}
+
+signAndSend().catch(console.error);
+```
+Running the example code produces the following results:
+```Bash
+$ node eip1559_tx.js 
+RLP-Encoded Tx (Unsigned): 0x02f283aa36a714847735940085174876e8008303000094b0920c523d582040f2bcb1bd7fb1c7c1ecebdb34865af3107a400080c0
+Tx Hash (Unsigned): 0x31d43a580534a77c71324a8434df6f2df993b3d551b29d4b70d8a889768a53f7
+Signed Raw Transaction: 0x02f87583aa36a714847735940085174876e8008303000094b0920c523d582040f2bcb1bd7fb1c7c1ecebdb34865af3107a400080c001a03f8ed18cb03ee0fe3fbc3f0a7477a2f68db6ec84450e77e702b82a3f2c873aa4a0205c4f6a16ea8ad13a148cc3105814cd4a6860cd26a771651199c85ccb7c7f0f
+Transaction Hash: 0x07bfbeb337e19763a1f74d989dae2953807dcb06822354cfefb16405a11beb93
+Transaction Receipt:  TransactionReceipt {
+  provider: JsonRpcProvider {},
+  to: '0xB0920c523d582040f2BCB1bD7FB1c7C1ECEbdB34',
+  from: '0x7e41354AfE84800680ceB104c5Fc99eCB98A25f0',
+  contractAddress: null,
+  hash: '0x07bfbeb337e19763a1f74d989dae2953807dcb06822354cfefb16405a11beb93',
+  index: 1,
+  blockHash: '0x0ac051e8f615805c69eec6e193e39637adeb7cf314a0098d455e7d9ac395a7ee',
+  blockNumber: 7135937,
+  logsBloom: '0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000',
+  gasUsed: 21000n,
+  blobGasUsed: null,
+  cumulativeGasUsed: 42000n,
+  gasPrice: 3096751769n,
+  blobGasPrice: null,
+  type: 2,
+  status: 1,
+  root: undefined
+}
+```
+### 底层手动构建 EIP-1559 原始交易（Low-Level Manual Construction of an EIP-1559 Raw Transaction）
+以下示例演示了创建并签名一笔 EIP-1559（类型为 0x02）交易的完整底层流程。通过手动构建字段列表、进行 RLP 编码并对类型化载荷（typed payload）进行签名，这一方法揭示了 wallet.signTransaction 内部究竟发生了什么。
+```js
+// npm install ethers@6
+import { ethers } from "ethers";
+const RLP = require('@ethereumjs/rlp');
+
+// Replace with your own RPC and private key
+const rpcUrl = "https://ethereum-sepolia-rpc.publicnode.com"; // or mainnet, etc.
+const provider = new ethers.JsonRpcProvider(rpcUrl);
+const privateKey = "0xYOUR_PRIVATE_KEY_HERE";
+const wallet = new ethers.Wallet(privateKey, provider);
+
+const recipient = "0xRECIPENT_ADDRESS"; // example address
+
+async function createAndSendRawEip1559Tx() {
+  const chainId = await provider.getChainId(); // This is a RPC call
+  const nonce = await provider.getTransactionCount(wallet.address); // This is a RPC call
+
+  // Example parameters — adjust as needed (or use provider.estimateGas + getFeeData)
+  const maxPriorityFeePerGas = ethers.parseUnits("2", "gwei");   // tip
+  const maxFeePerGas = ethers.parseUnits("30", "gwei");         // fee cap (base fee + tip)
+  const gasLimit = 21000n;
+  const value = ethers.parseEther("0.01"); // 0.01 ETH
+  const data = "0x"; // or contract calldata
+  const accessList = []; // [] or proper access list for EIP-2930 style savings
+
+  // Unsigned fields in strict order for Transaction Type 2
+  const unsignedFields = [
+    ethers.toBeHex(chainId),              // chainId
+    ethers.toBeHex(nonce),                // nonce
+    ethers.toBeHex(gasLimit),             // gasLimit
+    ethers.toBeHex(maxPriorityFeePerGas), // maxPriorityFeePerGas
+    ethers.toBeHex(maxFeePerGas),         // maxFeePerGas
+    recipient,                            // to
+    ethers.toBeHex(value),                // value
+    data,                                 // data
+    accessList                            // accessList
+  ];
+
+  // RLP-encode the unsigned fields
+  const encodedUnsigned = RLP.encode(unsignedFields);
+
+  // Prepend the transaction type byte (0x02)
+  const txType = Buffer.from('02', 'hex');
+  const fullTx = Buffer.concat([txType, encodedUnsigned]);
+
+  // This is the signing hash
+  const signingHash = ethers.keccak256(fullTx);
+
+  // Sign the hash
+  const signingKey = new ethers.SigningKey(wallet.privateKey);
+  const signature = signingKey.sign(ethers.getBytes(signingHash));
+
+  // For typed transactions we use yParity (0 or 1) instead of legacy v
+  const signedFields = [
+    ...unsignedFields,
+    sig.v - 27, // yParity (0 or 1)
+    sig.r,
+    sig.s
+  ];
+
+  const encodedSigned = RLP.encode(signedFields);
+
+  const rawTransaction = '0x02' + Buffer.from(encodedSigned).toString('hex');
+
+  console.log("Raw transaction hex:\n", rawTransaction);
+
+  // Send the raw transaction
+  const txHash = await provider.send("eth_sendRawTransaction", [rawTransaction]);
+  console.log("Transaction sent! Hash:", txHash);
+
+  const receipt = await provider.waitForTransaction(txHash);
+  console.log("Mined in block", receipt.blockNumber);
+}
+
+createAndSendRawEip1559Tx().catch(console.error);
+```
+## 交易的反序列化（Deserializing the Transaction）
+现在我们已经从零开始创建并向以太坊网络发送了一笔交易，我们可以遵循其逆过程，尝试从上一个示例中获得的已签名原始交易（signed raw transaction）开始，重新构建交易的每一个字段。这将帮助你理解交易的各个字段是如何实际包含在交易本身之中的——你只需要以正确的方式将其提取出来。
+
+让我们从完整的已签名原始交易字符串开始：
+```
+0x02f87583aa36a714847735940085174876e8008303000094b0920c523d582040f2bcb1bd7fb1c7c1ecebdb34865af3107a400080c001a03f8ed18cb03ee0fe3fbc3f0a7477a2f68db6ec84450e77e702b82a3f2c873aa4a0205c4f6a16ea8ad13a148cc3105814cd4a6860cd26a771651199c85ccb7c7f0f
+```
+回想一下 EIP-2718，所有以太坊交易都由以下部分组成：
+* 首字节：指定交易类型。
+* 交易类型载荷 (Payload)
+
+这几乎总是转化为该特定交易类型所有字段的 RLP 编码。我们的交易以 0x02 开头。这代表了交易类型，而 0x02 意味着它是一个 EIP-1559 交易。接下来的部分是构成 EIP-1559 交易的所有交易字段的 RLP 编码。
+
+为了快速解码这些字段，我们可以使用 cast 工具的 from-rlp 命令，并将交易的剩余部分作为输入：
+```Bash
+$ cast from-rlp f87583aa36a714847735940085174876e8008303000094b0920c523d582040f2bcb1bd7fb1c7c1ecebdb34865af3107a400080c001a03f8ed18cb03ee0fe3fbc3f0a7477a2f68db6ec84450e77e702b82a3f2c873aa4a0205c4f6a16ea8ad13a148cc3105814cd4a6860cd26a771651199c85ccb7c7f0f
+["0xaa36a7","0x14","0x77359400","0x174876e800","0x030000","0xb0920c523d582040f2bcb1bd7fb1c7c1ecebdb34","0x5af3107a4000","0x",[],"0x01","0x3f8ed18cb03ee0fe3fbc3f0a7477a2f68db6ec84450e77e702b82a3f2c873aa4","0x205c4f6a16ea8ad13a148cc3105814cd4a6860cd26a771651199c85ccb7c7f0f"]
+```
+你可以看到上一个 cast 命令的输出包含了一系列十六进制项：它们正是 EIP-1559 交易的各个字段。让我们逐一分析并重构这笔交易：
+```
+0xaa36a7Sepolia
+```
+测试网的链 ID（Chain ID）：转为十进制是 11155111。
+```
+0x14
+```
+交易使用的随机数（Nonce）：转为十进制是 20。你可以去区块浏览器核实，这个数值是完全正确的。
+```
+0x77359400
+```
+最大优先费用（Max Priority Fee per gas）：十进制为 2,000,000,000，即每单位 Gas 2 Gwei。
+```
+0x174876e800
+```
+最大费用（Max Fee per gas）：十进制为 100,000,000,000，即每单位 Gas 100 Gwei。
+```
+0x030000
+```
+Gas 限制（Gas Limit）：十进制为 196,608。
+```
+0xb0920c523d582040f2bcb1bd7fb1c7c1ecebdb34
+```
+接收者地址。
+```
+0x5af3107a4000
+```
+发送的以太币数量（以 Wei 为单位）：十进制为 $10^{14}$ 。这等同于 0.0001 ETH。
+```
+0x
+```
+空的数据载荷（Data Payload），说明这是一笔简单的转账。
+```
+[]
+```
+空的访问列表（Access List）。
+```
+0x01
+```
+签名的 $v$ 值；0x01 表示椭圆曲线公钥的 $y$ 坐标为奇数（0x00 则表示偶数）。
+```
+0x3f8ed18cb03ee0fe3fbc3f0a7477a2f68db6ec84450e77e702b82a3f2c873aa4
+```
+签名的 $r$ 值，代表椭圆曲线上随机点的 $x$ 坐标。
+```
+0x205c4f6a16ea8ad13a148cc3105814cd4a6860cd26a771651199c85ccb7c7f0f
+```
+签名的 $s$ 值，代表签名的证明部分。
+
+### 使用 EIP-155 创建原始交易（Raw Transaction Creation with EIP-155）
+EIP-155 “简单重放攻击保护”标准规定了一种受重放攻击保护的交易编码方式，它在签名之前的交易数据中包含了一个链 ID（Chain ID）。这确保了为某个区块链（例如以太坊主网）创建的交易在另一个区块链（例如以太坊经典或 Sepolia 测试网）上是无效的。因此，在一个网络上广播的交易无法在另一个网络上被重放，该标准也因此得名。
+
+通过在被签名的数据中包含链 ID，交易签名可以防止任何篡改，因为一旦修改链 ID，签名就会失效。因此，EIP-155 使得交易无法在其他链上重放，因为签名的有效性取决于链 ID。
+
+链 ID 字段根据交易预定的网络取值，如表 6-2 所示：
+
+表 6-2. 常见链标识符（Chain Identifiers）
+![Table 6-2](<./images/table 6-2.png>)
+欲了解详尽的链标识符列表，请参阅 [ChainList](https://chainlist.org/)。
+最终的交易结构会经过 RLP 编码、哈希处理并进行签名。更多细节请参考 EIP-155 规范。
+
+### 签名对称前缀值 (v) 与公钥恢复 (Public Key Recovery)
+正如“交易的结构”中所提到的，以太坊的交易消息中并不包含 from（发送者）字段。这是因为发起者的公钥可以直接从 ECDSA 签名中计算出来。一旦获得了公钥，就可以轻松计算出地址。这种从签名中恢复签名者公钥的过程被称为公钥恢复。给定在“ECDSA 数学原理”中计算出的 $r$ 和 $s$ 值，我们可以计算出两个可能的公钥。首先，我们根据签名中的 $x$ 坐标 $r$ 值，计算出两个椭圆曲线上的点 $R$ 和 $R'$。之所以存在两个点，是因为椭圆曲线相对于 $x$ 轴是对称的。因此，对于任何 $x$ 值（即 $r$），在曲线上都有两个可能的 $y$ 值与之对应，分别位于 $x$ 轴的两侧。接着，我们根据 $r$ 计算出 $r^{-1}$，即 $r$ 的乘法逆元。最后，我们计算 $z$，它是消息哈希值的低 $n$ 位，其中 $n$ 是椭圆曲线的阶。这两个可能的公钥计算公式如下：
+
+$$K_1 = r^{-1} (sR - zG)$$
+
+和
+
+$$K_2 = r^{-1} (sR' - zG)$$
+
+其中：
+* $K_1$ 和 $K_2$ 是签名者公钥的两种可能性。
+* $r^{-1}$ 是签名 $r$ 值的乘法逆元。
+* $s$ 是签名的 $s$ 值。
+* $R$ 和 $R'$ 是临时公钥 $Q$ 的两种可能性。
+* $z$ 是消息哈希的低 $n$ 位。
+* $G$ 是椭圆曲线生成点。
+
+为了提高效率，交易签名包含了一个前缀值 $v$，它告诉我们两个可能的 $R$ 值中哪一个是真正的临时公钥。如果 $v$ 是偶数，那么 $R$ 就是正确的值；如果 $v$ 是奇数，那么正确的就是 $R'$。通过这种方式，我们只需要计算一个 $R$ 值和唯一的一个公钥 $K$。
+
+## 签名与传输的分离（离线签名）
+一旦交易完成签名，它就可以传输到以太坊网络。通常，创建、签名和广播交易这三个步骤是作为单一操作发生的（例如使用 `cast send` 命令）。然而，正如你在“原始交易的创建与签名”中所看到的，你可以分两个独立的步骤来创建和签名交易。一旦你拥有了已签名的交易，就可以使用 `ethers.JsonRpcProvider("...").broadcastTransaction` 进行传输，该函数接受十六进制编码且已签名的交易并将其传输到以太坊网络。
+
+为什么需要将签名的生成与传输分离？最常见的原因是安全性。对交易进行签名的计算机必须在内存中加载解锁的私钥。而执行传输的计算机必须连接到互联网（并运行以太坊客户端）。如果这两个功能在同一台计算机上，你的私钥就暴露在联网系统中，这是非常危险的。
+> [!WARNING]
+> 如果你将私钥保存在联网设备中，你将面临多种形式的攻击，如恶意软件和远程黑客攻击，同时也更容易受到钓鱼攻击。
+
+将签名和传输功能分离并在不同的机器上执行（分别在离线和在线设备上），被称为离线签名（Offline Signing），这是一种常见的安全实践。
+
+图 6-10 展示了该过程，具体步骤如下：
+
+1. 在线计算机：创建一个未签名的交易。在此处可以获取账户的当前状态，特别是当前的随机数（nonce）和可用资金。
+
+2. 离线设备：将未签名的交易转移到“气隙（air-gapped）”离线设备进行交易签名（例如通过二维码或 USB 闪存驱动器）。
+
+3. 在线广播：将已签名的交易传输（回）到在线设备，以便在以太坊区块链上广播（例如通过二维码或 USB 闪存驱动器）。
+
+![Figure 6-10](<./images/figure 6-10.png>)
+图 6-10. 离线签名流程
+
+根据你对安全级别的需求，“离线签名”计算机与在线计算机的分离程度可以有所不同。其范围可以从受防火墙保护的隔离子网（在线但隔离），到完全不联网的系统，即所谓的气隙系统（Air-gapped System）。在气隙系统中，不存在任何网络连接——计算机通过一段“空气”与在线环境完全隔绝。为了签名交易，你需要使用数据存储介质或（更好的方式）通过摄像头扫描二维码来往返传输数据。当然，这意味着你必须手动传输每一笔需要签名的交易，因此这种方式不具备大规模扩展性。
+
+虽然并非所有环境都能利用完全的气隙系统，但即使是小程度的隔离也能带来显著的安全收益。例如，一个带有防火墙的隔离子网，如果仅允许通过某种消息队列协议，那么与在联网系统上签名相比，它能提供更小的攻击面和更高的安全性。许多公司为此使用 ZeroMQ (0MQ) 等协议。在这种架构下，交易会被序列化并进入待签名队列。队列协议类似于 TCP 套接字，将序列化后的消息传输给签名计算机。签名计算机（谨慎地）从队列中读取序列化交易，使用相应的密钥实施签名，然后将其放入传出队列。传出队列再将已签名的交易传输给运行以太坊客户端的计算机，由后者将其从队列中取出并广播到网络。
+
+## 交易生命周期（Transaction Life Cycle）
+在本节中，我们将探索一笔交易的完整生命周期：从它被签名的那一刻起，到它被包含进区块，直至该区块最终被确认（Finalized）。
+
+### 创建并签名交易（Creating and Signing the Transaction）
+第一步是创建交易，选择交易类型并填写该类型所需的所有字段。例如，在“原始交易的创建与签名”一节中，我们创建了一笔 EIP-1559 交易。
+
+一旦拥有了交易数据，我们就需要使用正确的私钥对其进行签名（否则交易将因签名无效而变为废件），从而获得最终且确定的“已签名交易”。这才是我们真正需要发送给网络并等待被打包进区块的原始数据。
+
+### 将交易发送至网络（Sending the Transaction to the Network）
+交易必须被包含在一个区块中，才能被以太坊协议视为“已确认”；否则，它仅仅是一段只有我们自己知道的已签名数据。
+
+> [!TIP]
+> 极其重要的一点是：以太坊协议仅认可那些被包含在有效链区块内的交易。为了更新以太坊的状态（例如完成转账或执行合约），你必须将已签名的交易发送到网络，并等待它被打包进区块。单凭一串已签名的交易数据本身不会产生任何效果，除非它被成功纳入区块。
+
+因此，我们需要将签名后的交易发送到网络。为此，我们只需将交易发送到一个以太坊节点即可：这可以是您自己的节点，也可以是第三方节点，例如 Alchemy、Infura 或 Public Node（我们在之前的示例中使用的就是后者）。
+> [!NOTE]
+> 默认情况下，几乎所有钱包都使用第三方节点，这样用户无需安装任何软件即可开始使用以太坊网络。尽管如此，如果您希望最大限度地保护隐私并真正做到不依赖任何人，您应该使用自己的客户端。您可以参考第 3 章，了解如何安装您的第一个以太坊节点的详细指南。
+
+当我们的签名交易到达第一个节点时，该节点会执行一些验证，以便立即清除垃圾交易或无效交易。如果验证通过，该节点会将交易添加到其**内存池（mempool）**中，并将其传播给它的一部分对等节点（peers）。每个收到交易的节点都会对其进行验证，将其加入自己的内存池，并进一步传播。
+
+这个过程是以太坊 **P2P Gossip 协议（流言协议）**的一部分。其结果是，在短短几秒钟内，一笔以太坊交易就能传播到全球所有的以太坊节点。从每个节点的角度来看，无法辨别交易的来源。向该节点发送交易的邻居节点可能是交易的发起者，也可能是从它的另一个邻居那里接收到的。为了能够追踪交易的起源或干扰传播，攻击者必须控制全网相当大比例的节点。这是 P2P 网络安全和隐私设计的一部分，尤其适用于区块链网络。
+
+> [!NOTE]
+> 你可能会好奇，为什么节点不将交易“淹没式”地发送给所有邻居，而仅仅发送给一部分邻居。答案是效率和带宽保护。事实上，将所有交易发送给所有节点是极低效的：这会产生大量的重复消息，导致网络流量激增，并且随着交易数量的增加，网络流量会呈指数级增长，从而导致扩展性变得极差。
+
+### 构建区块（Building the Block）
+此时此刻，我们的交易已经到达了几乎所有的以太坊节点，但它仍然未被确认，因为它尚未被包含在区块中。这种情况会一直持续，直到某位被选中提议下一个区块的**验证者（Validator）**最终从其自身的内存池中取出交易，将它们添加到区块中，并将该区块发布到网络上。
+
+一旦交易被包含在区块中，它们就会修改以太坊的状态。这种修改可能是简单的账户余额变动（如普通转账），也可能是调用智能合约从而改变其内部状态存储。这些执行结果并不会直接保存在交易数据中，而是以**交易收据（Transaction Receipt）**的形式记录。收据详细说明了交易执行的结果，包括是否成功、消耗的 Gas 以及产生的事件。
+
+### 交易的最终确认（Finalizing the Transaction）
+现在，我们的交易已被包含在一个区块中，并且已经修改了以太坊的状态。然而，尽管可能性极低，包含该交易的区块仍有可能被撤销，并被另一个不包含该交易的区块所取代。这种情况被称为区块重组（Block Reorganization），简称为 Reorg。
+
+为了完全确定交易不可逆转，我们需要等待包含该交易的区块被以太坊共识协议最终确认（Finalized）（我们将在第 15 章详细探讨这一机制）。在以太坊目前的权益证明（PoS）机制下，这通常需要大约 12.8 分钟（即两个 Epoch）。
+
+> [!NOTE]
+> 虽然只有等到“最终确认”才能百分之百确定交易已在区块链上定格，但通常情况下，你只需要等待几个区块即可。大多数钱包会在交易被纳入区块后立即将其显示为“已确认”。
+
+## 另一种生命周期
+我们在前一节中探讨的生命周期是交易遵循的传统标准流程。然而，在过去的三四年里，尤其是在当下，一种全新的交易生命周期已经建立。为了解释这一点，我们需要引入一个核心概念：提案者与构建者分离（Proposer-Builder Separation，简称 PBS）。
+
+### MEV 与提案者-构建者分离（PBS）
+正如我们将在第 15 章深入探讨的那样，以太坊每 12 秒就需要一名验证者提议一个新区块，以推动链的增长。验证者从其内存池中收集交易，将它们组织起来填满区块，并将区块发布到网络中，以便所有其他节点进行验证和传播。
+
+传统上，以太坊节点为了实现利润最大化，会根据用户支付的交易费用（具体而言，是 EIP-1559 交易中的优先费/小费）对交易进行排序。多年来，这一直是优化矿工和验证者收益的标准方法。
+
+然而，随着 2020 年“DeFi 之夏”以及 2021 年牛市期间以太坊普及度的飙升，出现了一种新现象：最大可提取价值（Maximal Extractable Value，简称 MEV，此前称为矿工可提取价值）。这一概念从根本上改变了以太坊矿工和验证者创建区块的方式。
+
+MEV 指的是区块生产者通过以下战略性决策，能从区块中提取的最大价值：
+* 包含（Inclusion）：决定哪些交易可以进入区块。
+* 排序（Ordering）：调整交易在区块内的先后位置。
+* 排除（Exclusion）：故意忽略某些高费用的交易。
+
+虽然这听起来似乎无伤大雅，但它对区块生产的动态产生了（并且仍在产生）巨大的影响。例如，设想有一笔交易准备在像 Uniswap 这样的去中心化交易所购买大量特定的代币 X。验证者可以看到这笔交易，并预先知道它会导致价格大幅上涨。这意味着验证者可以添加两笔交易来从中获利：
+1. 第一笔交易：买入一些代币 X，并将其顺序排在大额买单交易之前。
+2. 第二笔交易：卖出在前一笔交易中买入的代币 X，并将其顺序排在大额买单交易之后。
+
+这就是所谓的三明治攻击（Sandwich Attack）：验证者利用大额买单交易所产生的滑点（Slippage）来获利。让我们通过一个简化的例子来演示这个概念：
+假设一名用户提交了一笔交易（tx1），购买 1,000 个 xyz 代币（如图 6-11 所示）。假设 xyz 代币的价格是 1,000 美元，因此该用户将购买价值 100 万美元的代币。这种买入压力会将代币价格推高至 1,010 美元。
+![Figure 6-11](<./images/figure 6-11.png>)
+图 6-11. MEV 干预前的用户交易
+但验证者看到了通过“抢跑” tx1 赚钱的机会。他们创建了两笔交易：tx0 和 tx2。其中 tx0 包含 10 个 xyz 代币的买单，而 tx2 是等额代币的卖单。验证者将这些交易精确地放置在用户 tx1 的前后，如 所示。请记住，验证者之所以能做到这一点，是因为他们是区块的实际创建者，因此可以自由选择区块内交易的排序。
+
+在这种情况下，验证者的 tx0 会以较低的价格买入，随后用户的 tx1 执行并大幅抬高价格，最后验证者的 tx2 以最高价卖出。通过这种方式，验证者无风险地赚取了价差。
+![Figure 6-12](<./images/figure 6-12.png>)
+图 6-12. 验证者的三明治攻击
+结果是，验证者能够以 1,000 美元的价格买入 10 个 xyz 代币，并以 1,010 美元的价格卖出，从而赚取了 $10 \times 10 = 100$ 美元的利润。
+
+这是验证者用来实现利润最大化的一种非常简单的策略。实际上还存在许多其他更复杂的策略。由于竞争异常激烈，一个新的参与者出现了：构建者（Builders）。事实上，运行所有这些策略需要大量的计算能力，远超普通验证者所拥有的资源（请记住，只需 16 GB 内存即可运行一个验证者节点）。这意味着 MEV 也在威胁验证者的去中心化，因为它更偏向于那些能够支付数百万美元用于基础设施、并雇佣人员专门研究高利润策略以构建“更好”区块的大型实体。
+
+这一问题的解决方案出现在 2021 年 1 月，随着 Flashbots v0.1 的发布。它使区块提议者（起初是矿工，现在是验证者）能够以去信任的方式，将寻找最优区块构建的任务外包给这些被称为“构建者”的新实体。得益于这种职责分离——由构建者负责挑选交易填满区块并创建支付给验证者费用最高的区块（构建者也会从中抽取一部分费用），而验证者仅负责向网络提议区块——验证者仍然可以在普通的商用机器上运行。
+
+### 私人内存池 (Private Mempools)
+MEV 生态系统已经发展到如此庞大的规模，以至于现在构建者之间的竞争不仅体现在寻找最大化利润的最优策略上，还体现在他们能获取哪些交易来填充区块。他们掌握的交易越多，就越能更好地实施其策略。
+
+这导致了私人内存池的出现。这些内存池允许用户或实体将交易直接提交给区块生产者，而无需将其暴露给公共网络。它们在缓解抢跑风险和实现隐私工作流方面发挥着重要作用。
+
+Flashbots 开发了自己的解决方案，称为 [Flashbots Protect](https://oreil.ly/Jq4rT)。目前最流行的钱包 MetaMask 也已开始为用户默认使用私人内存池（称为[智能交易](https://oreil.ly/Jq4rT)）。
+
+### 新的交易生命周期
+MEV、提案者与构建者分离（PBS）以及私人内存池的出现，彻底改变了区块生产的环境。如今，大量交易不再遵循我们之前解释的常规生命周期；在创建并签名后，它们会通过私人内存池直接发送给构建者（Builder）。构建者会处理这些交易，尝试将它们纳入一个最优化的区块中，并最终将整个区块发送给负责提议下一个区块的验证者（Validator）。在这种模式下，交易跳过了公共内存池的传播过程，直接出现在已构建好的区块中。
+
+## 多重签名交易 (Multiple-Signature Transactions)
+如果你熟悉比特币的脚本功能，就会知道可以创建一个比特币多重签名（Multisig）账户，只有在多个参与方共同签署交易时（例如 2/2 或 3/4 签名）才能动用资金。以太坊基础的 EOA（外部账户）价值交易并没有多重签名的直接条款；然而，任何复杂的签名限制都可以通过智能合约来实现，你可以设定任何能想到的条件来处理以太币和代币的转账。
+
+要利用这一功能，以太币必须先转移到一个预先编写好支出规则的钱包合约中，比如多重签名要求或支出限额（或两者的结合）。一旦支出条件得到满足，钱包合约就会在经授权的 EOA 触发下发送资金。例如，为了通过多签条件保护你的以太币，你需要将其转入一个多签合约。每当你想要向另一个账户发送资金时，所有要求的授权用户都需要使用普通的钱包应用向该合约发送交易，这本质上是授权该合约执行最终的转账。
+
+这些合约还可以设计为在执行本地代码或触发其他合约之前需要多个签名。该方案的安全性最终取决于多签合约的代码。
+
+以智能合约的形式实现多重签名交易，充分展示了以太坊极高的灵活性。目前，Safe（原名 Gnosis Safe）已成为创建多重签名账户的行业事实标准。这套经过严苛实战检验的智能合约被各大主流协议和 DAO 广泛采用。如图 6-13 所示，截至 2024 年 11 月，它保护着超过 60 亿美元的 ETH 以及价值超过 740 亿美元的 ERC-20 代币。
+
+![Figure 6-13](<./images/figure 6-13.png>)
+图 6-11. Gnosis Safe 保护着价值数十亿美元的资产
+
+> [!NOTE]
+> 使用 Gnosis Safe 执行交易的常规流程如下：
+> 1. 发起提议：Safe 的其中一名签名者发起一笔他们想要签署并发送到以太坊网络的交易。
+> 2. 收集签名：其他签名者查看该交易，如果同意该交易的意图，则进行签名。
+> 3. 执行交易：当达到法定人数（Quorum）（即预设的最小签名数量）后，交易最终被发送到网络进行处理和执行。
+
+## 结论
+交易是以太坊系统中每一项活动的起点。交易就像是“输入”，它们驱动 EVM（以太坊虚拟机）去评估合约、更新余额，并从更广泛的层面修改以太坊区块链的状态。接下来，我们将更详细地深入研究智能合约，并学习如何使用面向合约的编程语言——Solidity 进行编程开发。
+
 
 ---
 [^1]: 也可以理解为经典交易，不过在以太坊社区中多用遗留交易。
