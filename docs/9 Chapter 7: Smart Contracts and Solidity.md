@@ -122,7 +122,7 @@ Version: 0.8.26+commit.8a97fa7a.Linux.g++
 我们的第一次尝试如示例 7-1 所示。
 
 示例 7-1. Faucet.sol：一个实现水龙头功能的 Solidity 合约
-```
+```Solidity
 // SPDX-License-Identifier: GPL-3.0
 // Our first contract is a faucet!
 contract Faucet {
@@ -143,7 +143,7 @@ contract Faucet {
 现在，我们将使用命令行形式的 Solidity 编译器来直接编译我们的合约。Solidity 编译器 solc 提供了多种选项，你可以通过传递 `--help` 参数来查看这些选项。
 
 我们使用 solc 的 `--bin` 和 `--optimize` 参数来为我们的示例合约生成优化后的二进制文件：
-```
+```Bash
 $ solc --optimize --bin Faucet.sol
 ======= Faucet.sol:Faucet =======
 Binary:
@@ -165,7 +165,7 @@ solc 产生的结果是一个十六进制序列化的二进制文件，它可以
 合约的 ABI 被指定为一个由函数描述（参见“函数”）和事件（参见“事件”）组成的 JSON 数组。函数描述是一个包含 type（类型）、name（名称）、inputs（输入）、outputs（输出）、constant（是否为常量）和 payable（是否可支付）等字段的 JSON 对象。事件描述对象则包含 type、name、inputs 和 anonymous（是否匿名）字段。
 
 我们使用 solc 命令行编译器来为我们的 Faucet.sol 示例合约生成 ABI：
-```
+```Bash
 $ solc --abi Faucet.sol
 ======= Faucet.sol:Faucet =======
 Contract JSON ABI
@@ -182,7 +182,7 @@ Contract JSON ABI
 正如我们在之前的代码中看到的，我们的 Faucet 合约在 Solidity 0.8.26 版本下可以成功编译。但如果我们使用的是另一个版本的 Solidity 编译器会怎样呢？这种语言仍处于不断的变动之中，事物可能会以意想不到的方式发生变化。我们的合约相当简单，但如果我们的程序使用了一个仅在 Solidity 0.8.26 版本中新增的功能，而我们尝试用 0.8.25 版本去编译它，结果会如何？
 
 为了解决此类问题，Solidity 提供了一种名为 版本 Pragma (version pragma) 的编译器指令，用于告知编译器该程序需要特定的编译器（及语言）版本。让我们看一个例子：
-```
+```Solidity
 pragma solidity 0.8.26;
 ```
 Solidity 编译器会读取版本 Pragma，如果编译器版本与该指令不兼容，则会产生错误。在这种情况下，我们的版本 Pragma 表明该程序可以由版本为 0.8.26 的 Solidity 编译器编译。Pragma 指令不会被编译进 EVM 字节码；它们是编译时指令，仅供编译器用于检查兼容性。
@@ -193,7 +193,7 @@ Solidity 编译器会读取版本 Pragma，如果编译器版本与该指令不�
 让我们为 Faucet 合约添加一个 pragma 指令。我们将新文件命名为 Faucet2.sol，以便在接下来的示例中记录我们的改动，如示例 7-2 所示。
 
 示例 7-2. Faucet2.sol：为 Faucet 添加版本 pragma
-```
+```Solidity
 pragma solidity 0.8.26;
 // SPDX-License-Identifier: GPL-3.0
 // Our first contract is a faucet!
