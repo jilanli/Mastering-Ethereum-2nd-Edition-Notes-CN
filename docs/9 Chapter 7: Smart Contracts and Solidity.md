@@ -581,6 +581,253 @@ function changeOwner(address newOwner) public onlyOwner {
 
 函数修饰器是一种极其有用的工具，因为它们允许我们为函数编写先决条件（Preconditions）并一致地应用它们，从而使代码更易于阅读，并因此更易于进行安全性审计（Audit）。虽然它们最常用于访问控制，但其功能非常多样，还可以用于许多其他用途。
 
+### 合约继承 (Contract Inheritance)
+Solidity 的合约对象支持继承（inheritance），这是一种通过额外功能扩展基类合约（Base contract）的机制。要使用继承，请使用关键字 `is` 来指定父合约：
+```Solidity
+contract Child is Parent {
+ ...
+}
+```
+通过这种构造，子合约（Child contract）将继承父合约（Parent）的所有方法、功能和变量。Solidity 还支持多重继承（Multiple inheritance），可以通过在关键字 is 之后以逗号分隔合约名称来指定：
+```Solidity
+contract Child is Parent1, Parent2 {
+ ...
+}
+```
+我们可以通过显式指定合约（如 Parent1.functionName()）来调用继承链中更高级别的函数；如果我们想调用扁平化继承层级（Flattened inheritance hierarchy）中上一层的函数，也可以使用 super.functionName()。
+
+合约继承使我们能够以模块化、可扩展性和复用性为目标编写合约。我们可以从实现最通用功能的简单合约开始，然后通过在更具体的合约中继承这些功能来进行扩展。
+
+在我们的 Faucet 合约中，我们引入了在构造时分配所有者的访问控制功能。这种功能非常通用，许多合约都会用到。我们可以将其定义为一个通用合约，然后通过继承将其扩展到 Faucet 合约中。为了丰富这个示例，让我们将可暂停（Pausable）功能与访问控制功能结合在一起。
+
+我们首先定义一个基类合约 Owned，它拥有一个 owner 变量，并在合约的构造函数中对其进行设置：
+```Solidity
+contract Owned {
+    address owner;
+    // Contract constructor: set owner
+    constructor() {
+        owner = msg.sender;
+    }
+    // Access control modifier
+    modifier onlyOwner {
+        require(msg.sender == owner);
+        _;
+    }
+}
+```
+接下来，我们定义一个继承自 Owned 的基类合约 Pausable：
+```Solidity
+contract Pausable is Owned {
+    bool paused;
+    // Status check modifier
+    modifier whenNotPaused {
+        require(paused == false);
+        _;
+    }
+    // Functions to pause/unpause user operations
+    function pause() public onlyOwner {
+        paused = true;
+    }
+    function unpause() public onlyOwner {
+        paused = false;
+    }
+}
+```
+正如你所看到的，Pausable 合约可以使用在 Owned 中定义的 onlyOwner 函数修饰器。它也间接地使用了 Owned 中定义的 owner 地址变量及其构造函数。继承让每个合约都变得更加简洁，并专注于其特定的功能，使我们能够以模块化的方式管理细节。
+
+现在我们可以进一步扩展 Owned 合约（译注：此处根据上下文应为扩展 Pausable 合约），在 Faucet 中继承其功能：
+```Solidity
+contract Faucet is Pausable {
+    // Give out ether to anyone who asks
+    function withdraw(uint _withdrawAmount, address payable _to) public whenNotPaused {
+        // Limit withdrawal amount
+        require(_withdrawAmount <= 0.1 ether);
+        // Send the amount to the address that requested it
+        _to.transfer(_withdrawAmount);
+    }
+    // Accept any incoming amount
+    receive() external payable {}
+}
+```
+通过继承 Pausable（进而继承 Owned），Faucet 合约现在可以使用 whenNotPaused 修饰器，而该修饰器的开关状态可由 Owned 合约构造函数所定义的所有者（Owner）来控制。其功能效果与这些函数直接写在 Faucet 内部完全一致，但得益于这种模块化架构（Modular architecture），我们可以在其他合约中复用这些函数和修饰器，而无需重复编写。代码复用和模块化使我们的代码更简洁、更易读，也更易于审计。
+
+有时我们可能需要修改继承合约中的某些功能。幸运的是，Solidity 为我们提供了相应的功能：函数重写（Function Overriding）。声明为 virtual 的函数可以被继承链中更高级别的合约所重写（Override），这使得继承方案保持了极高的灵活性。
+
+让我们看一个例子。假设我们想让“可暂停”功能变成单向的：一旦暂停，合约就再也无法取消暂停。为了实现这一点，我们需要将 Pausable 合约中的 unpause 函数标记为 virtual，并在 Faucet 合约中重新声明 unpause 函数，并加上 override 属性，定义我们想要的新行为——即回滚（revert）：
+```Solidity
+contract Pausable is Owned {
+    bool paused;
+    // Status check modifier
+    modifier whenNotPaused {
+        require(paused == false);
+        _;
+    }
+    // Functions to pause/unpause user operations
+    function pause() public virtual onlyOwner {
+        paused = true;
+    }
+    function unpause() public virtual onlyOwner {
+        paused = false;
+    }
+}
+contract Faucet is Pausable {
+    // Give out ether to anyone who asks
+    function withdraw(uint _withdrawAmount, address payable _to) public whenNotPaused {
+        // Limit withdrawal amount
+        require(_withdrawAmount <= 0.1 ether);
+        // Send the amount to the address that requested it
+        _to.transfer(_withdrawAmount);
+    }
+    function unpause() public view override onlyOwner {
+        revert("Disabled feature”);
+    }
+    // Accept any incoming amount
+    receive() external payable {}
+}
+```
+
+如你所见，Faucet 中的 unpause() 函数必须使用 override 关键字进行声明。在 Pausable 合约中，为了保持一致性，我们将 pause 和 unpause 函数都标记为了 virtual，尽管在本例中我们仅需要修改 unpause。
+
+> [!Note]
+> 在 Solidity 中重写函数时，我们只能将可见性修改得更加开放——具体来说，可以将 external 修改为 public，但反之则不行。对于可变性（Mutability），我们可以将其收紧，例如从 nonpayable 改为 view 或 pure（正如我们在 unpause 中所做的），以及从 view 改为 pure。但有一个重要的例外：如果一个函数被标记为 payable，则必须保持不变——我们不能将其修改为任何其他类型。
+
+### 多重继承 (Multiple Inheritance)
+
+当我们在 Solidity 中使用多重继承时，它依赖于一种称为 C3 线性化（C3 linearization） 的算法来确定合约继承的顺序。该算法确保了继承顺序是严格且可预测的，这有助于避免诸如循环继承（Cyclic inheritance）之类的问题。简单来说，它确定了在查找某个函数时检查基类合约的先后顺序，而这个顺序是从右到左的。这意味着位于最右侧的合约被视为“最派生（Most derived）”的合约。例如，在合约声明 `contract C is A, B { }` 中，合约 B 比合约 A 更具派生性。
+
+除了使用 C3 线性化之外，Solidity 还设有额外的防护机制。其中一项核心规则是：如果多个父合约拥有同名函数，我们必须显式地声明正在重写哪些合约。让我们来看一个例子：
+```Solidity
+contract A {
+    function foo() public virtual returns(string memory){
+        return "A";
+    }
+}
+contract B {
+    function foo() public virtual returns(string memory){
+        return "B";
+    }
+}
+contract C is A, B {
+}
+```
+乍一看，由于 C3 线性化算法理应处理好所有逻辑，这段代码似乎可以正常工作。但在现实中，它无法通过编译。Solidity 会抛出一个错误：“类型错误（TypeError）：派生合约必须重写函数 foo。两个或多个基类定义了具有相同名称和参数类型的函数。” 为了解决这个问题，我们需要像下面这样，显式地重写来自 A 和 B 的 foo() 函数：
+```Solidity
+contract C is A, B {
+    function foo() public override(A, B) returns(string memory){
+        return "C";
+    }
+}
+```
+因此，尽管 Solidity 使用了 C3 线性化算法，但在编码时大部分情况下我们并不需要担心它，因为 Solidity 会强制我们显式地处理函数重写。
+
+然而，C3 线性化算法真正发挥重要作用的一个地方是：当 Solidity 决定构造函数的执行顺序时。构造函数遵循 C3 线性化的顺序，但有一个特别之处：它们是逆序执行的。如果你仔细思考，这其实很合理：**最派生（most derived）**合约的构造函数应该最后运行，因为它可能会重写（或覆盖）早期构造函数所设置的内容。让我们来看一个例子：
+```Solidity
+contract Base{
+    uint x;
+}
+contract Derived1 is Base{
+    constructor(){
+        x = 1;
+    }
+}
+contract Derived2 is Base{
+    constructor(){
+        x = 2;
+    }
+}
+contract Derived3 is Derived1, Derived2 {
+    uint public y;
+    constructor() Derived1() Derived2() {
+        y = x;
+    }
+}
+```
+在这种情况下，变量 y 的最终值将如预期般为 2，因为 Derived2 的构造函数最后运行，并将 x 设置为 2。
+
+需要特别记住的是，你提供构造函数参数的顺序并不会影响执行顺序。例如，即使我们像这样调换构造函数的调用顺序：
+```Solidity
+contract Derived3 is Derived1, Derived2 {
+    uint public y;
+    constructor() Derived2() Derived1() { // we switched the order here
+        y = x;
+    }
+}
+```
+即使我们改变了构造函数中参数传递的顺序，结果依然是一样的。变量 y 的值仍将为 2，因为构造函数的执行顺序是由 C3 线性化算法决定的，而不是由我们调用构造函数的先后顺序决定的。
+
+最后一点提醒：Solidity 在多重继承中使用 C3 线性化，可能会导致 super 关键字的行为超出你的预期。有时，调用 super 可能会触发**同级类（Sibling class）**中的函数，而不是直接父类中的函数。这可能会导致一些令人惊讶的结果——某个方法居然是从一个你甚至没有直接列在继承链中的类里被调用的。这属于一种边际情况（Edge case），所以我们不会深入探讨，但在处理具有复杂继承结构的合约时，请务必记住这一点。
+
+### 错误处理 (Error Handling)
+
+合约调用可能会终止并返回错误。Solidity 中的错误处理由三个函数负责：assert、require 和 revert。
+
+当合约因错误终止时，所有的状态更改（对变量、余额等的修改）都会被回滚（revert）。如果调用涉及多个合约，这种回滚会沿着合约调用链向上追溯。这确保了交易是原子性的（atomic），意味着交易要么全部成功完成，要么对状态不产生任何影响并被彻底撤销。
+
+assert 和 require 函数的运行方式相同：评估一个条件，如果条件为假（false），则停止执行并报错。按照惯例，assert 用于预期结果为真的情况，这意味着我们使用 assert 来测试内部条件（如内部不变量）。相比之下，require 用于测试输入数据（如函数参数或交易字段），以此设定我们对这些条件的预期。
+
+值得注意的是，assert 在失败时的行为与 require 不同：它会耗尽所有剩余的 Gas。这使得它在被触发时更加昂贵，这也是为什么我们通常将其保留给那些“绝不应该被破坏”的不变量（Invariants）。
+
+我们在 onlyOwner 函数修饰器中已经使用了 require，用来测试消息发送者是否为合约的所有者：
+```Solidity
+require(msg.sender == owner);
+```
+`require` 函数充当了**门控条件（gate condition）**的作用，如果条件不满足，它会阻止函数其余部分的执行并生成错误。它还可以包含一段有用的文本信息，用于说明错误原因。该错误信息会被记录在交易日志中。建议采用这种做法，以便让用户了解错误原因及修复方法，从而提升用户体验。因此，我们可以通过在 require 函数中添加错误信息来改进代码：
+```Solidity
+require(msg.sender == owner, "Only the contract owner can call this function");
+```
+`revert` 函数会停止合约执行并回滚任何状态更改。它有两种使用方式：一种是作为语句直接传递自定义错误（Custom Error）（不带括号），另一种是作为函数带括号并接收一个字符串参数。在 Gas 消耗方面，自定义错误要便宜得多，而错误字符串和自定义错误都会被记录在交易日志中：
+```Solidity
+revert();
+revert("Error string");
+revert CustomError(arg1, arg2);
+```
+合约中的某些条件无论我们是否显式检查，都会产生错误。例如，在我们的 Faucet 合约中，我们并没有检查是否有足够的以太币来满足取款请求。这是因为如果余额不足以进行转账，transfer 函数本身就会失败并报错，从而回滚交易：
+```Solidity
+payable(msg.sender).transfer(withdrawAmount);
+```
+然而，进行**显式检查**（Explicit check）并在失败时提供清晰的错误信息可能会更好。我们可以通过在转账之前添加一条 require 语句来实现：
+```Solidity
+require(this.balance >= withdrawAmount,
+ "Insufficient balance in faucet for withdrawal request");
+payable(msg.sender).transfer(withdrawAmount);
+```
+像这样额外的错误检查代码会稍微增加 Gas 消耗，但与省略相比，它提供了更好的错误报告。虽然由于以太坊主网过去的高昂成本，最小化 Gas 消耗曾是一项强制性任务，但 EIP-4844 的引入显著降低了成本，使得 Gas 消耗在今天不再是一个紧迫的问题。然而，在 Gas 效率与详尽的错误检查之间取得平衡仍然非常重要。
+
+Solidity 通过 try/catch 功能为我们提供了对错误处理更强的控制力。这是一个非常实用的特性，让我们在调用外部合约时能更优雅地处理错误。当出现问题时，我们的整个交易不会直接失败并回滚，我们可以捕获错误并决定下一步该怎么做。使用 try/catch 时，我们基本上是将外部调用包装在一个 try 块中。如果调用成功，try 块内的代码正常执行。但如果出了问题——比如被调用的合约耗尽了 Gas、触发了 require 语句或抛出了异常——代码会跳转到 catch 块，我们可以在那里处理错误。
+
+这有个简单的例子：
+```Solidity
+function sampleExternalCall(address target, uint amount) public {
+    try ITargetContract(target).someFunction(amount) {
+        // This runs if the call is successful
+        emit Success("Call succeeded!");
+    } catch {
+        // This runs if the call fails
+        emit Error("Call failed!");
+    }
+}
+```
+我们可以根据错误类型以不同的方式捕获错误。基础的 catch 块会捕获所有错误，但我们也可以捕获特定错误。例如，我们可以使用 catch Error(string memory reason) 捕获返回错误字符串的错误，或者使用 catch (bytes memory lowLevelData) 处理不返回数据的低级别错误。此外，我们还可以使用 catch Panic(uint errorCode) 捕获更严重的 Panic 错误（如溢出或除以零）。
+
+需要注意的是，try/catch 仅适用于外部调用。它对同一个合约内的内部函数调用（Internal calls）没有帮助。如果同一合约内的函数执行失败，它仍会像往常一样回滚，我们无法使用 try/catch 来捕获。
+
+
+### 事件（events）
+当交易完成时（无论成功与否），都会产生一份交易回执（Transaction receipt）。交易回执中包含日志条目（Log entries），这些条目提供了有关交易执行期间所发生操作的信息。**事件**（Events）是 Solidity 中的高级对象，用于构建这些日志。
+
+事件对于轻客户端（Light clients）和 DApp 服务尤其有用，它们可以“监听”（Watch）特定事件，并将其报告给用户界面，或者更改应用程序的状态，以反映底层合约中发生的事件。
+
+事件对象接收参数，这些参数会被序列化并记录在区块链的交易日志中。你可以在参数前加上关键字 indexed，使该值成为索引表（哈希表）的一部分，从而方便应用程序进行搜索或过滤。
+
+
+
+
+
+
+
+
+
+
 
 
 
