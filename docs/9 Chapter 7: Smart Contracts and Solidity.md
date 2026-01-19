@@ -489,7 +489,7 @@ function FunctionName([parameters]) {public|private|internal|external} [virtual|
 
 下一组关键字（public, private, internal, external）指定了函数的可见性：
 
-** public** 
+**public** 
 
 默认选项（但在现代 Solidity 中必须显式指定）。这类函数可以由其他合约、EOA 交易或在合约内部调用。
 
@@ -755,7 +755,7 @@ contract Derived3 is Derived1, Derived2 {
 ```
 即使我们改变了构造函数中参数传递的顺序，结果依然是一样的。变量 y 的值仍将为 2，因为构造函数的执行顺序是由 C3 线性化算法决定的，而不是由我们调用构造函数的先后顺序决定的。
 
-最后一点提醒：Solidity 在多重继承中使用 C3 线性化，可能会导致 super 关键字的行为超出你的预期。有时，调用 super 可能会触发**同级类（Sibling class）**中的函数，而不是直接父类中的函数。这可能会导致一些令人惊讶的结果——某个方法居然是从一个你甚至没有直接列在继承链中的类里被调用的。这属于一种边际情况（Edge case），所以我们不会深入探讨，但在处理具有复杂继承结构的合约时，请务必记住这一点。
+最后一点提醒：Solidity 在多重继承中使用 C3 线性化，可能会导致 super 关键字的行为超出你的预期。有时，调用 super 可能会触发**同级类**（Sibling class）中的函数，而不是直接父类中的函数。这可能会导致一些令人惊讶的结果——某个方法居然是从一个你甚至没有直接列在继承链中的类里被调用的。这属于一种边际情况（Edge case），所以我们不会深入探讨，但在处理具有复杂继承结构的合约时，请务必记住这一点。
 
 ### 错误处理 (Error Handling)
 
