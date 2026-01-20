@@ -5,7 +5,7 @@
 简而言之，EOA 是不关联任何代码或数据存储的简单账户，而合约账户则既有关联代码又有数据存储。EOA 由交易控制，这些交易是在独立于协议之外的“现实世界”中创建，并使用私钥进行加密签名的；而合约账户没有私钥，因此它们以其智能合约代码所规定的预置方式进行“自我控制”。这两类账户都由一个以太坊地址来标识。在本章中，我们将讨论合约账户以及控制它们的程序代码。
 
 ## 什么是智能合约？
-“智能合约”（Smart Contract）这一术语多年来被用来描述各种不同的事物。20 世纪 90 年代，密码学家**尼克·萨博（Nick Szabo）**创造了这个术语，并将其定义为“一套以数字形式指定的承诺，包括各方履行这些承诺的协议”。自那时起，智能合约的概念不断演变，特别是在 2009 年比特币发布以及随后的去中心化区块链平台出现之后。
+“智能合约”（Smart Contract）这一术语多年来被用来描述各种不同的事物。20 世纪 90 年代，密码学家**尼克·萨博**（Nick Szabo）创造了这个术语，并将其定义为“一套以数字形式指定的承诺，包括各方履行这些承诺的协议”。自那时起，智能合约的概念不断演变，特别是在 2009 年比特币发布以及随后的去中心化区块链平台出现之后。
 
 在以太坊的语境下，这个术语其实有点名不副实。因为以太坊智能合约既不“智能”，也不是法律意义上的“合约”，但这个术语还是流传了下来。在本书中，我们使用“智能合约”指代那些作为以太坊网络协议的一部分、在 EVM（以太坊虚拟机）上下文中确定性运行的不可篡改的计算机程序——也就是说，它们运行在去中心化的“以太坊世界计算机”上。
 
@@ -819,30 +819,385 @@ function sampleExternalCall(address target, uint amount) public {
 
 事件对象接收参数，这些参数会被序列化并记录在区块链的交易日志中。你可以在参数前加上关键字 indexed，使该值成为索引表（哈希表）的一部分，从而方便应用程序进行搜索或过滤。
 
+#### 添加事件
 
+到目前为止，我们还没有在 Faucet 示例中添加任何事件，现在让我们来补全。我们将添加两个事件：一个用于记录所有的取款（Withdrawal），另一个用于记录所有的存款（Deposit）。我们将分别把这两个事件命名为 Withdrawal 和 Deposit。首先，我们在 Faucet 合约中定义这些事件：
+```Solidity
+contract Faucet is Pausable {
+ event Withdrawal(address indexed to, uint amount);
+ event Deposit(address indexed from, uint amount);
+ [...]
+}
+```
+我们选择将地址设为索引字段（indexed），以便在任何用于访问该“水龙头”（Faucet）的用户界面中进行搜索和过滤。
 
+接下来，我们使用 emit 关键字将事件数据整合到交易日志中：
+```Solidity
+// Give out ether to anyone who asks
+function withdraw(uint withdrawAmount) public {
+ [...]
+ payable(msg.sender).transfer(withdrawAmount);
+ emit Withdrawal(msg.sender, withdrawAmount);
+}
+// Accept any incoming amount
+receive() external payable {
+ emit Deposit(msg.sender, msg.value);
+}
+```
+最终得到的 Faucet.sol 合约如示例 7-3 所示。
 
+示例 7-3. Faucet.sol：增加了事件的修订版 Faucet 合约
+```Solidity
+// Version of Solidity compiler this program was written for
+pragma solidity 0.8.26;
+// SPDX-License-Identifier: GPL-3.0
+contract Owned {
+    address owner;
+    // Contract constructor: set owner
+    constructor() {
+        owner = msg.sender;
+    }
+    // Access control modifier
+    modifier onlyOwner {
+        require(msg.sender == owner);
+        _;
+    }
+}
+contract Pausable is Owned {
+    event Paused();
+    event Unpaused();
+    bool paused;
+    // Status check modifier
+    modifier whenNotPaused {
+        require(paused == false);
+        _;
+    }
+    // Functions to pause/unpause user operations
+    function pause() public onlyOwner {
+        paused = true;
+        emit Paused();
+    }
+    function unpause() public onlyOwner {
+        paused = false;
+        emit Unpaused();
+    }
+}
+contract Faucet is Pausable {
+    event Withdrawal(address indexed to, uint amount);
+    event Deposit(address indexed from, uint amount);
+    // Give out ether to anyone who asks
+    function withdraw(uint withdrawAmount) public whenNotPaused {
+        // Limit withdrawal amount
+        require(withdrawAmount <= 0.1 ether);
+        // Send the amount to the address that requested it
+        payable(msg.sender).transfer(withdrawAmount);
+        emit Withdrawal(msg.sender, withdrawAmount);
+    }
+    // Accept any incoming amount
+    receive() external payable {
+        emit Deposit(msg.sender, msg.value);
+    }
+}
+```
 
+#### 捕获事件 (Catching events)
 
+让我们通过一段代码来演示如何捕获链上事件。具体来说，我们将编写一个脚本来监控以太坊主网上的 USDT 代币转账。为此，我们需要一个 Web3 库；虽然 web3.js 是最早流行起来的，但近年来 ethers.js 已经后来居上。作为开发者，我们更倾向于使用 ethers.js，因此我们将在这里使用它。
 
+首先，让我们设置项目。先创建一个新的项目文件夹，然后运行以下命令安装 ethers 库：
+```
+npm i ethers
+```
+接下来，我们需要 USDT 合约的 ABI（应用二进制接口）。你可以从 Etherscan 获取它，位置就在合约源代码下方（参见图 7-1），并将其保存在你的项目文件夹中。
 
+![Figure 7-1](<./images/figure 7-1.png>)
+图 7-1. Etherscan 上的 USDT ABI 区域
 
+现在，让我们来讨论如何连接到以太坊网络。我们需要一个 WebSocket 提供者（Provider），因为我们正在监听事件，而这需要保持持续的连接。你可以选择付费提供者（它们更可靠、速度更快），或者在 ChainList 等网站上寻找免费的公共提供者。对于我们的示例来说，公共提供者就足够了，尽管它们可能会受到速率限制（Rate limited）。
 
+> [!Note]
+> 要监听事件，我们需要的是 WebSocket，而不是普通的 RPC 终端（Endpoint）。RPC 终端非常适合像调用函数或获取数据这样的单次请求，但对于捕获事件，WebSocket 连接能让我们的客户端与服务器之间保持一条开放的通信线路。
 
+现在，让我们深入代码：
+```Solidity
+const ethers = require("ethers");
+const ABI = require("./USDTabi.json"); // the ABI we fetched from etherscan
+const usdtAddress = "0xdac17f958d2ee523a2206206994597c13d831ec7"; // USDT Contract
+const wssProviderURL = "wss://ethereum-rpc.publicnode.com"; // a public websocket provider
+const wssProvider = new ethers.providers.WebSocketProvider(wssProviderURL);
+const usdtContract = new ethers.Contract(usdtAddress, ABI, wssProvider);
+async function getTransfer(){
+    usdtContract.on("Transfer", (from, to, value, event)=>{
+        let transferEvent ={
+            from: from,
+            to: to,
+            value: value,
+            eventData: event,
+        }
+        console.log(JSON.stringify(transferEvent, null, 2))
+    })
+}
+getTransfer()
+```
+在声明了 USDT 地址和 WebSocket 提供者（Provider）的 URL 之后，脚本会通过 ethers 库创建一个全新的 WebSocketProvider 实例来启动。该提供者通过我们指定的 WebSocket URL 将我们连接到以太坊网络。接着，我们使用 ethers.Contract 类来创建一个 USDT 智能合约实例。在此过程中，我们需要传入 USDT 的地址、ABI 以及我们的 WebSocket 提供者。
 
+现在进入脚本的核心部分：我们在合约实例上设置了一个事件监听器（Event Listener），用于捕获由 USDT 合约触发的 Transfer 事件。每当有 Transfer 事件发生时，该监听器就会触发一个回调函数（Callback function），该函数接收与转账相关的四个参数。在回调函数内部，我们获取转账详情并将其封装在一个对象中，然后将该对象格式化为 JSON 字符串。最后，我们使用 console.log 将该 JSON 字符串打印到控制台，以便我们可以实时查看每笔转账的具体情况。
 
+这个是我们脚本输出的样例：
+```json
+{
+  "from": "0xc169e35abb35f8e712eCF9F6d9465C96962CA383",
+  "to": "0x7E73F680243A93a9D98C5Ce4b349451805fc37ca",
+  "value": {
+    "type": "BigNumber",
+    "hex": "0x55b27b90"
+  },
+  "eventData": {
+    "blockNumber": 20687220,
+    "blockHash": "0xa5c3c518d7246e516e076ef8d43c387dcb54d06702e9e059c583ce28a7a271b8",
+    "transactionIndex": 166,
+    "removed": false,
+    "address": "0xdAC17F958D2ee523a2206206994597C13D831ec7",
+    "data": "0x0000000000000000000000000000000000000000000000000000000055b27b90",
+    "topics": [
+      "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+      "0x000000000000000000000000c169e35abb35f8e712ecf9f6d9465c96962ca383",
+      "0x0000000000000000000000007e73f680243a93a9d98c5ce4b349451805fc37ca"
+    ],
+    "transactionHash":
+      "0xb527a5a18f10ed9b65dda7a914715a0b0bbfd6db053d8f6b35805ad49a588cfd",
+    "logIndex": 300,
+    "event": "Transfer",
+    "eventSignature": "Transfer(address,address,uint256)",
+    "args": [
+      "0xc169e35abb35f8e712eCF9F6d9465C96962CA383",
+      "0x7E73F680243A93a9D98C5Ce4b349451805fc37ca",
+      {
+        "type": "BigNumber",
+        "hex": "0x55b27b90"
+      }
+    ]
+  }
+}
+```
+像这样的事件不仅在链外通信中极其有用，对于调试也是如此。在开发过程中，你可以在交易回执的“logs”（日志）条目下找到这些事件。当程序运行不如预期时，这些日志信息往往能起到“救命稻草”的作用。
 
+### 调用其他合约 (Calling Other Contracts)
+在合约内部调用其他合约是一项非常有用但具有潜在风险的操作。我们将探讨实现这一操作的各种方式，并评估每种方法的风险。简而言之，风险源于这样一个事实：你可能对你所调用的合约，或者正在调用你的合约并不完全了解。在编写智能合约时，你必须牢记：虽然你可能预期大部分时间是在与**外部账户**（EOA）打交道，但没有什么能阻止一个结构任意复杂、甚至带有恶意企图的合约来调用你的代码，或被你的代码调用。
 
+#### 创建新实例
+调用另一个合约最安全的方式是由你自己创建该合约。这样，你可以完全确定它的接口和行为。为此，你可以像在其他面向对象语言中那样，简单地使用关键字 new 来实例化它。在 Solidity 中，关键字 new 会在区块链上创建该合约，并返回一个可用于引用它的对象。假设你想在名为 Token 的合约内部创建并调用一个 Faucet 合约：
+```Solidity
+contract Token is Pausable {
+    Faucet _faucet;
+    constructor() {
+        _faucet = new Faucet();
+    }
+}
+```
+这种合约构造机制确保了你清楚地知道合约的确切类型及其接口。Faucet 合约必须在 Token 合约的作用域内定义，如果定义在另一个文件中，你可以通过 import 语句来实现：
+```Solidity
+import "Faucet.sol";
+contract Token is Pausable {
+    Faucet _faucet;
+    constructor() {
+        _faucet = new Faucet();
+    }
+}
+```
+你还可以有选择地在创建时指定转账的以太币金额，并向新合约的构造函数传递参数：
+```Solidity
+import "Faucet.sol";
+contract Token is Pausable {
+    Faucet _faucet;
+    constructor() {
+        _faucet = new Faucet{value: 0.5 ether}();
+    }
+}
+```
+注意：这要求 Faucet 的构造函数必须被标记为 payable！
 
+随后你就可以调用 Faucet 的函数了。在这个例子中，我们在 Token 合约的 changeOwner 函数内部，调用了 Faucet 合约的 changeOwner 函数：
+```Solidity
+import "Faucet.sol";
+contract Token is Pausable {
+    Faucet _faucet;
+    constructor() {
+         _faucet = new Faucet{value: 0.5 ether}();
+    }
+    function changeOwner(address newOwner) onlyOwner {
+        _faucet.changeOwner(newOwner);
+    }
+}
+```
+必须理解的是，虽然你是 Token 合约的所有者，但新创建的 Faucet 合约的所有者是 Token 合约本身，而不是你！正如我们在本章前面所看到的，在进行外部调用时，msg.sender 会发生变化；在我们的例子中，在 Faucet 的执行上下文中，msg.sender 将会是 Token 合约的地址。
 
+#### 指向现有实例（Addressing an existing instance）
+调用合约的另一种方式是将一个现有合约实例的地址进行强制类型转换（Casting）。通过这种方法，你可以将一个已知的接口应用于现有的实例。因此，确定你所指向的实例确实是你所假设的类型，这一点至关重要。让我们看一个例子：
+```Solidity
+import "Faucet.sol";
+contract Token is Pausable {
+    Faucet _faucet;
+    constructor(address _f) {
+        _faucet = Faucet(_f);
+        _faucet.withdraw(0.1 ether)
+    }
+}
+```
+在这里，我们将构造函数参数 _f 提供的地址转换为一个 Faucet 对象。这比之前的机制风险大得多，因为我们无法百分之百确定该地址实际上是否为一个 Faucet 对象。当我们调用 withdraw 时，我们假设它接收相同的参数并执行与我们的 Faucet 声明相同的代码，但我们无法保证这一点。据我们所知，即使函数名相同，该地址上的 withdraw 函数执行的内容可能与我们的预期完全不同。因此，使用传入的地址并将其转换为特定对象，要比你自己创建合约危险得多。
 
+#### 底层调用：call、delegatecall 和 staticcall
+Solidity 提供了一些更为“底层”的函数用于调用其他合约。这些函数与同名的 EVM **操作码**（Opcodes）直接对应，允许我们手动构建合约间的调用。因此，它们代表了调用其他合约时最灵活、也最危险的机制。它们会返回两个值：布尔值 `bool success` 表示操作是否成功，以及字节数组 `bytes memory data` 包含返回的数据。
+下面是使用 call 方法实现的相同示例：
+```Solidity
+contract Token is Pausable {
+    constructor(address _faucet) {
+        _faucet.call(abi.encodeWithSignature("withdraw(uint256)", 0.1 ether));
+    }
+}
+```
+如你所见，这种类型的 call 是一种对函数的**“盲调”（Blind call）**，非常类似于在合约上下文中构建一个原始交易。如果出现问题，call 函数会返回 false，因此你可以通过评估返回值来进行错误处理：
+```Solidity
+contract Token2 is Pausable {
+    constructor(address _faucet) {
+        (bool res, ) = _faucet.call(
+            abi.encodeWithSignature("withdraw(uint256)", 0.1 ether)
+        );
+        if (!res) {
+            revert("Withdrawal from faucet failed");
+        }
+    }
+}
+```
+call 的变体包括 staticcall 和 delegatecall。正如“地址对象”一节中所提到的，staticcall 以一种保证不发生状态更改的方式调用另一个合约的函数。这意味着被调用的函数不能修改任何状态变量、不能与区块链状态交互，也不能发送以太币。
 
+delegatecall 与 call 的不同之处在于 msg 上下文（Context）不会发生改变。例如，call 会将 msg.sender 的值更改为发起调用的合约地址，而 delegatecall 则保持与发起调用的合约相同的 msg.sender。从本质上讲，delegatecall 是在当前合约的执行上下文中运行另一个合约的代码。它最常用于调用库（Library）中的代码，也允许你采用这样一种模式：使用存储在别处的库函数，但让该代码操作你当前合约的存储数据；**代理模式（Proxy pattern）**就是这种用法的一个典型示例。使用 delegatecall 必须极其谨慎，它可能会产生一些意想不到的影响，特别是当被调用的合约并非专门设计为库时。
 
+让我们通过一个示例合约来演示 call 和 delegatecall 在调用库和合约时使用的各种调用语义。在示例 7-4 中，我们使用一个事件来记录每次调用的详细信息，并观察调用上下文如何根据调用类型发生变化。
 
+示例 7-4. CallExamples.sol：不同调用语义的示例
+```Solidity
+pragma solidity 0.8.26;
+contract CalledContract {
+    event callEvent(address sender, address origin, address from);
+    function calledFunction() public {
+        emit callEvent(msg.sender, tx.origin, address(this));
+    }
+}
+library CalledLibrary {
+    event callEvent(address sender, address origin, address from);
+    function calledFunction() public {
+        emit callEvent(msg.sender, tx.origin, address(this));
+    }
+}
+contract Caller {
+    function makeCalls(CalledContract _calledContract) public {
+        // Calling CalledContract and CalledLibrary directly
+        _calledContract.calledFunction();
+        CalledLibrary.calledFunction();
+        // Low-level calls using the address object for CalledContract
+        (bool res, ) = address(_calledContract).
+            call(abi.encodeWithSignature("calledFunction()"));
+        require(res);
+        (res, ) = address(_calledContract).
+            delegatecall(abi.encodeWithSignature("calledFunction()"));
+        require(res);
+    }
+}
+```
+正如你在本例中所见，我们的主合约是 Caller，它调用了一个库 CalledLibrary 和一个合约 CalledContract。被调用的库和合约都有相同的 calledFunction 函数，它们都会触发一个名为 calledEvent 的事件。该事件记录了三个关键数据：msg.sender（消息发送者）、tx.origin（交易起点）和 this（当前合约地址）。
 
+每次调用 calledFunction 时，根据是直接调用还是通过 delegatecall 调用，它可能会拥有不同的执行上下文（所有上下文变量的值都可能不同）。
 
+在 Caller 合约中，我们首先通过直接调用来触发合约和库的函数。然后，我们显式使用底层函数 call 和 delegatecall 来调用 CalledContract.calledFunction。通过这种方式，我们可以清晰地观察到各种调用机制的行为差异。
 
+我们部署了合约，运行了 makeCalls 函数，并捕获了生成的事件。为了清晰起步，我们将具体的十六进制地址替换为标签（例如：CALLER_CONTRACT_ADDRESS）。
 
+我们调用了 makeCalls 并传入了 CalledContract 的地址，随后捕获了由四次不同调用触发的事件。让我们逐步分析 makeCalls 函数的每个步骤。
 
+第一个调用是：
+```Solidity
+_calledContract.calledFunction();
+```
+这里我们使用高层 ABI 直接调用。捕获的事件参数如下：
+```json
+{
+    sender: 'CALLER_CONTRACT_ADDRESS',
+    origin: 'EOA_ADDRESS',
+    from: 'CALLED_CONTRACT_ADDRESS'
+}
+```
+如你所见，在这种情况下，msg.sender 是 Caller 合约的地址。而 tx.origin 则是我们账户的地址（即发送交易给 Caller 的 `web3.eth.accounts[0]`）。正如事件中的最后一个参数所显示的，该事件是由 CalledContract 触发并生成的。
 
+makeCalls 中的下一个调用是对库（Library）的调用：
+```
+CalledLibrary.calledFunction();
+```
+这看起来与我们调用合约的方式完全相同，但其行为却大相径庭。让我们看看触发的第二个事件：
+```json
+{
+    sender: 'EOA_ADDRESS',
+    origin: 'EOA_ADDRESS',
+    from: 'CALLER_CONTRACT_ADDRESS'
+}
+```
+这一次，msg.sender 不再是 Caller 合约的地址。相反，它是我们账户的地址，并且与交易起点（tx.origin）相同。这是因为当你调用一个库（Library）时，该调用始终是 delegatecall，并在调用者的上下文中运行。
 
+因此，当 CalledLibrary 的代码运行时，它继承了 Caller 的执行上下文，就好像它的代码是在 Caller 内部运行一样。变量 this（在触发的事件中显示为 from）指向的是 Caller 的地址，即便该变量是从 CalledLibrary 内部访问的。接下来的两次调用——分别使用底层函数 call 和 delegatecall——验证了我们的预期，它们触发的事件结果与我们刚刚看到的现象完全吻合。
+
+## Gas 的考量
+
+Gas（在第 14 章中有更详细的描述）是智能合约编程中一个极其重要的考量因素。Gas 是一种资源，它限制了以太坊允许单笔交易消耗的最大计算量。如果在计算过程中超过了 Gas 上限（Gas Limit），则会发生以下一系列情况：
+
+* 抛出“Gas 耗尽”（Out of Gas）异常。
+* 合约在执行前的状态将被恢复（回滚/Reverted）。
+* 所有用于支付 Gas 的以太币都将作为交易费用被扣除，且不会退还。
+
+### 最佳实践
+由于 Gas 是由发起交易的用户支付的，高昂的 Gas 成本会打消用户调用函数的积极性。因此，尽可能降低合约函数的 Gas 开销符合程序员的最佳利益。为此，在构建智能合约时，建议遵循以下实践以最小化函数调用的 Gas 成本：
+
+**避免使用动态大小的数组** 
+
+在动态大小的数组中进行任何循环（例如对每个元素执行操作或搜索特定元素）都会引入消耗过多 Gas 的风险。事实上，合约可能在找到预期结果或处理完所有元素之前就耗尽了 Gas，从而在没有任何结果的情况下浪费了时间和以太币。
+
+**避免调用其他合约** 
+
+调用其他合约（特别是当这些函数的 Gas 成本未知时）会增加 Gas 耗尽的风险。应避免使用未经过充分测试和广泛使用的库。一个库受到的同行审查越少，使用的风险就越大。
+
+**避免冗余的存储访问**
+
+无论是读取还是写入，访问 Storage（存储） 变量的 Gas 成本都远高于操作 Memory（内存） 变量。因此，只要有可能，最好避免直接使用存储。例如，如果我们需要在某些计算过程中多次读取一个存储变量，建议先将其值复制到一个内存变量中。这样我们可以反复访问更便宜的内存变量，而不是每次都去读存储，从而节省 Gas 成本。
+
+> [!Note]
+> 为了更好地理解这一点，我们需要知道 Solidity 使用了多个位置来保存数据：Storage（存储），它是持久化的且开销昂贵；Memory（内存），它是暂时的，在执行过程中开销较小；Calldata，这是一个只读区域，主要用于外部函数的输入参数；以及 Stack（栈），用于存储生命周期极短的变量，且访问成本最低。选择哪种存储位置取决于数据的使用方式：是否需要持久化、是否可变，以及是否从外部传入。我们将在第 14 章深入探讨这些区别，但尽早开始思考它们如何影响性能和成本是非常有益的。
+
+### 估算 Gas 成本
+
+以太坊刚启动时，估算 Gas 成本有点像在拍卖会上猜测最高出价。这与比特币处理交易手续费的方式类似：我们自己设定 Gas 价格，矿工会优先处理出价最高的交易。这意味着在网络繁忙时，为了确保交易能快速通过，我们通常不得不支付更高的费用。这种机制虽然可行，但也意味着 Gas 价格波动极大——当网络拥堵时，价格有时会飙升至天价。
+
+随后在 2021 年，EIP-1559 提案的实施改变了游戏规则。以太坊引入了一个根据网络活动自动调整的基础费用（Base fee），不再需要我们去猜测合适的 Gas 价格。这使得 Gas 费用变得更加可预测。此外，如果我们赶时间，仍然可以添加一份“小费”（称为优先费/Priority fee）来加速处理。现在，估算 Gas 成本变得更加直接，我们也更不容易为了让交易被处理而支付过高的费用。
+
+让我们详细了解如何估算交易的 Gas 成本。首先，每笔交易的 Gas 成本由两个核心部分组成：
+
+**基础费用 (Base fee)**
+
+这是交易被纳入区块所需的最低 Gas 金额。基础费用由网络自动确定，并根据网络的繁忙程度动态调整。如果区块满了，基础费用就会上涨；如果区块未被填满，基础费用就会下降。
+
+**优先费 (Priority fee)**
+这是我们额外添加的费用，用于激励矿工（在 PoS 语境下为验证者）优先处理我们的交易。这就像为了让交易处理得更快而给的小费。我们可以自行设置这笔费用，但钱包应用程序通常会根据你期望的交易入块速度给出建议值。
+
+现在，交易的总 Gas 成本计算公式为：消耗的 Gas 量（取决于交易的复杂程度）乘以有效 Gas 价格。而有效 Gas 价格就是基础费用与优先费的总和。
+
+因此，要估算我们的 Gas 成本，只需遵循以下步骤：
+1. 查看当前基础费用（Base fee）：我们可以使用 [Etherscan Gas Tracker](https://oreil.ly/ZIqcq) 等 Gas 追踪工具，或者通过 Web3 库（例如 ethers 的 [maxFeePerGas()](https://oreil.ly/YuBC0)）来获取。
+2. 选择优先费（Priority fee，即小费）：这取决于你希望交易成交的速度。如果你很赶时间，可以提高小费。Gas 追踪工具可以根据当前网络状况和你的紧迫程度，帮你确定合适的小费金额。
+3. 计算总额：将总 Gas 价格（基础费用 + 小费）乘以预估的 Gas 使用量。作为开发者，我们可以使用 Web3 库（如 ethers 的 [estimateGas()](https://oreil.ly/sfqZP)）来计算这个预估 Gas 使用量。但如果你只是普通用户，不必担心——任何钱包应用在你发送交易时都会自动为你处理好这一切。
+
+示例计算：假设基础费用为 20 gwei，我们设置的小费为 2 gwei，且我们的交易消耗了 50,000 gas，那么预估的 Gas 成本为：
+$$(20\ gwei + 2\ gwei) \times 50,000 = 1,100,000\ gwei$$
+即 110 万 gwei，等同于 0.0011 ETH。建议你在开发工作流中养成评估函数 Gas 成本的习惯，以避免在将合约部署到主网时遇到任何意外。
+
+## 总结
+在本章中，我们开始深入研究智能合约，并全面探索了 Solidity 合约编程语言。我们以一个简单的示例合约 Faucet.sol 为起点，逐步对其进行完善和复杂化，并以此为切入点探讨了 Solidity 语言的各个维度。
+
+在接下来的第 8 章中，我们将学习另一种面向合约的编程语言 —— Vyper。我们将对比 Vyper 与 Solidity，展示这两种语言在设计理念上的差异，从而进一步加深对智能合约编程的理解。
