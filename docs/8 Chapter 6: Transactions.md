@@ -169,7 +169,7 @@ $ cast balance 0x7e41354AfE84800680ceB104c5Fc99eCB98A25f0 --rpc-url https://ethe
 > * ChainList
 
 为了获取一些免费的 Sepolia ETH 代币，你可以使用在线水龙头（Faucet）。我们将使用 Google Cloud Web3 水龙头（如图 6-3 所示），它会提供 0.05 ETH。访问 Ethereum Sepolia Faucet，粘贴你的地址并点击 "Receive 0.05 Sepolia ETH" 按钮。你应该很快就能收到 0.05 ETH。
-![Figure 6-3](<./figure 6-3.png>)
+![Figure 6-3](<.images/figure 6-3.png>)
 图 6-3. Google Cloud Web3 水龙头界面
 
 在成功申领测试币后，你可以验证余额已从 0 变为 $0.05 \text{ ETH}$（即 $5 \times 10^{16} \text{ Wei}$ ）：
