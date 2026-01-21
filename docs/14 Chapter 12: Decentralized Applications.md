@@ -199,16 +199,264 @@ DApp 的前端是使用任何最知名的 Web2 框架（如 React、Angular 或 
 
 
 
-## A Basic DApp Example
+## 一个基础 DApp 示例
 
+到目前为止，我们已经探讨了 DApp 背后的基本概念。现在，是时候卷起袖子，亲自动手构建一个 DApp 了。
 
+你可以在网上找到许多教程来帮助你从零开始构建你的第一个以太坊 DApp，但我们强烈推荐 [Speedrun Ethereum](https://oreil.ly/Onygc)。这是快速学习并立即开始构建酷炫作品最有效的方式。为了提升你在以太坊上构建 DApp 的知识，我们建议你完成 Speedrun Ethereum 上的所有挑战，并加入 [BuidlGuidl 社区](https://buidlguidl.com/)。
 
+在本节中，我们将构建一个非常基础的去中心化应用，类似于 DApp 界的“Hello World”。你不需要任何先前的经验；所需要的只是一台电脑和互联网连接。
 
+### 安装要求
 
+要学习本教程，你需要在电脑上安装 [node.js](http://node.js/) 和 [yarn](https://oreil.ly/dq_hw)。请参考官方网站进行下载和安装。我们将使用 [Scaffold-ETH 2](https://scaffoldeth.io/)，这是一个非常酷的工具，可以让你极其快速地搭建开发环境。
 
+### 创建 DApp
 
+让我们打开终端，运行以下命令：
+```Bash
+$ npx create-eth@latest
+```
+系统会要求输入项目名称。在本演示中，我们选择 "mastering-ethereum"：
+```
+ +-+-+-+-+-+-+-+-+-+-+-+-+-+-+ 
+ | Create Scaffold-ETH 2 app | 
+ +-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
+? Your project name: mastering-ethereum
+```
+接着，它会询问你想使用哪种 Solidity 开发框架。这里我们选择 Hardhat，但如果你对 Foundry 更熟悉，也可以自由选择：
+```
+? What solidity framework do you want to use?
+❯ hardhat
+   foundry
+  none
+```
+几秒钟后，你应该会看到“Congratulations（恭喜）”字样以及类似于以下的“Next steps（后续步骤）”提示：
+```
+  Congratulations! Your project has been scaffolded! 🎉
 
+  Next steps:
 
+  cd mastering-ethereum
+  
+        Start the local development node
+  
+        yarn chain
+  
+        In a new terminal window, deploy your contracts
+  
+        yarn deploy
+  
+    In a new terminal window, start the frontend
+  
+    yarn start
+  
+ Thanks for using Scaffold-ETH 2 🙏 , Happy Building!
+```
 
+### 启动区块链
 
+现在，我们已经准备就绪，可以开始构建 DApp 了。首先进入项目文件夹：
+```Bash
+$ cd mastering-ethereum
+```
+在这里，如果你进入 packages/hardhat/contracts 目录，可以找到一个名为 YourContract.sol 的示例智能合约。contracts 文件夹是你存放 DApp 项目所需的所有智能合约的地方。
+
+在 packages/nextjs 文件夹中，你会发现为 DApp 前端预先搭建好的 Next.js 框架结构。
+
+由于这是一个非常基础的教程，我们不会从头开始编写任何合约，也不会修改前端。我们将使用默认设置，以快速演示常规的开发流程。
+
+首先，你需要启动一条用于本地开发的区块链。事实上，尽管最终产品会使用部署在以太坊主网上的智能合约，但你不应该使用真实的链来构建和测试 DApp。
+那会非常缓慢，而且会浪费大量的资金。Scaffold-ETH 提供了一个非常实用且简单的命令，可以立即启动一条新的本地开发链。你只需要运行：
+```
+$ yarn chain
+```
+
+### 部署你的合约
+
+现在，你需要将合约部署到上一步搭建的本地链上。同样地，Scaffold-ETH 为此提供了一个简单的命令。请打开一个新的终端窗口并输入：
+```
+$ yarn deploy
+```
+你应该会看到类似这样的输出：
+```
+Generating typings for: 2 artifacts in dir: typechain-types for target: ethers-v6
+Successfully generated 6 typings!
+Compiled 2 Solidity files successfully (evm target: paris).
+deploying "YourContract" (tx: 0x8ec9ba16869588c2826118a0043f63bc679a4e947f739e8032e911475e77dcb4)...: deployed at 0x5FbDB2315678afecb367f032d93F642f64180aa3 with 532743 gas
+👋  Initial greeting: Building Unstoppable Apps!!!
+📝  Updated TypeScript contract definition file on ../nextjs/contracts/deployedContracts.ts
+```
+正如你所见，该命令在本地链上部署了名为 YourContract 的示例智能合约。未来当你构建新的 DApp 时，你需要进入 `packages/hardhat/deploy` 目录并修改 `00_deploy_your_contract.ts` 文件，以便部署你实际需要的合约。
+
+如果你回到之前运行 yarn chain 命令的那个终端，你会发现产生了一些新的日志，特别是类似下面这条：
+```
+eth_sendTransaction
+  Contract deployment: <UnrecognizedContract>
+  Contract address:    0x5fbdb2315678afecb367f032d93f642f64180aa3
+  Transaction:         0x8ec9ba16869588c2826118a0043f63bc679a4e947f739e8032e911475e77dcb4
+  From:                0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266
+  Value:               0 ETH
+  Gas used:            532743 of 532743
+  Block #1:            0xa7b8e3b6f82eccb3542279573dbf8efa2b876ff00807a8619feef191007e06d9
+```
+注意：请留意 Contract deployment（合约部署） 和 Contract address（合约地址） 这几行。这证明你已经成功地在本地链的特定合约地址上部署了你的合约。
+
+### 启动前端
+
+Scaffold-ETH 示例自带了一个基础的内置前端，让你可以立即通过图形界面与合约进行交互。请打开第三个终端窗口并输入：
+```
+$ yarn start
+```
+它应该会返回类似以下的内容：
+```
+yarn start
+  ▲ Next.js 14.2.21
+  - Local:        http://localhost:3000
+ 
+ ✓ Starting...
+ ✓ Ready in 1767ms
+```
+现在，复制 localhost 对应的 URL，打开浏览器并粘贴该链接。你应该能看到前端界面，正如图 12-4 所示。
+![Figure 12-4](<./images/figure 12-4.png>)
+图 12-4. Scaffold-ETH 前端界面
+
+### 与你的合约交互
+
+恭喜你，一切准备就绪！你现在可以开始体验并与你的 DApp 进行交互了。你会发现有两个非常实用的功能，它们对你的开发流程至关重要：
+* 燃烧钱包 (Burner Wallets)
+* 调试合约 (Debug Contracts) 部分
+
+正如图 12-4 所示，在右上角，我们已经通过一个看起来随机且陌生的钱包连接到了网站。那是因为它是一个燃烧钱包（Burner Wallet）：
+这是一个自动生成的地址，其私钥暂时保存在你的浏览器中。事实上，如果你尝试刷新页面，你会发现燃烧钱包的地址并没有改变。
+
+燃烧钱包是开发流程中的一项“杀手锏”功能，因为你不需要每次都打开 Web3 钱包（如 MetaMask）并手动连接。当你准备好使用真实钱包时，
+只需点击下拉菜单并选择 Disconnect（断开连接）；然后点击 Connect Wallet（连接钱包） 并从列表中选择你心仪的钱包，
+正如图 12-5、12-6 和 12-7 所示。
+
+![Figure 12-5](<./images/figure 12-5.png>)
+图 12-5. 断开燃烧钱包
+![Figure 12-6](<./images/figure 12-6.png>)
+图 12-6. “连接钱包”按钮
+
+![Figure 12-7](<./images/figure 12-7.png>)
+图 12-7. 选择钱包
+
+第二个杀手锏功能是 Debug Contracts（调试合约） 栏目。只需点击页面中心的“Debug Contracts”链接即可打开它。
+在默认示例中，你应该会看到类似图 12-8 所示的内容。
+![Figure 12-8](<./images/figure 12-8.png>)
+图 12-8. 调试合约栏目
+
+在这里，你无需构建任何前端界面，即可轻松地与所有合约进行交互。这在开发过程中非常有用，可以让你不断检查合约是否如预期般运行。
+
+让我们进行一个小小的演示。首先，我们需要为我们的燃烧钱包注入资金，以便随后能发送交易与部署好的合约交互。为此，
+你只需点击最右侧的按钮，正如图 12-9 所示。你几乎会立即收到一些 ETH，并看到你的 ETH 余额有所增加。
+
+![Figure 12-9](<./images/figure 12-9.png>)
+图 12-9. 获取资金（Grab funds）按钮
+
+现在进入 setGreeting 栏目，在 _newGreeting 字段输入 hello world，在 payable value 字段输入 0.1。
+接着，点击 payable value 字段右侧的星号按钮：
+它会将 ETH 数值转换为等额的 wei 单位表示（ 1 ETH = 10¹⁸ wei ）。
+最后，点击 Send（发送） 来提交你的交易，观察它是如何改变合约状态的。
+图 12-10 展示了点击发送按钮前的合约状态。你可以看到合约目前持有 0 ETH，
+问候语（greeting）是 "Building Unstoppable Apps!!!"，
+溢价状态（premium）为 false，且计数器总数（totalCounter）等于 0。
+
+![Figure 12-10](<./images/figure 12-10.png>)
+图 12-10. 交易前的合约状态
+
+图 12-11 捕捉了发送交易后的合约状态。你可以直观地看到，你的合约现在持有 0.1 ETH，问候语（greeting）已变为 "hello world"，溢价状态（premium）变为 true，且计数器总数（totalCounter）等于 1。
+![Figure 12-11](<./images/figure 12-11.png>)
+图 12-11. 交易后的合约状态
+
+你可以尽情尝试各种操作，观察合约如何根据你的输入和行为做出响应。
+
+### 部署到 Vercel
+
+当你对自己的去中心化应用感到满意时，就可以将其发布到生产环境，例如 Vercel。Vercel 是一款非常实用的“前端即服务（frontend-as-a-service）”工具，让你能够轻松地将应用部署到互联网上。你还可以绑定自己购买的自定义域名，这样人们只需输入域名即可访问你的 DApp。
+
+Scaffold-ETH 再次通过提供一条简单的命令来协助你，实现将 DApp 立即部署到 Vercel。打开终端并输入：
+```
+$ yarn vercel:yolo
+```
+你需要关联你的 Vercel 账户（如果没有，则创建一个新账户）并为你的项目选择一个名称——仅此而已。几分钟后，你的整个 DApp 就会部署到 Vercel 上，全世界的任何人都可以去尝试运行它。
+
+如果你进入 Vercel 的个人主页，现在就可以看到新创建的项目。正如图 12-12 所示，在 Domains（域名）字段中，你可以找到 Vercel 为你自动生成的网站域名。
+![Figure 12-12](<./images/figure 12-12.png>)
+图 12-12. Vercel 项目页
+
+## 进一步实现 DApp 的去中心化
+
+在上一节中，我们将 DApp 部署到了 Vercel。虽然 Vercel 是目前托管 DApp 最流行的解决方案之一，但它并不是一项去中心化服务。所有内容都存储在其私有服务器上，这意味着 Vercel 可能会根据其政策审查任何用户，并追踪每个与你的 DApp 交互的人的 IP 地址。
+
+为了进一步提升 DApp 的去中心化程度，我们可以将前端托管在 IPFS（星际文件系统）等解决方案上，这是一个全球性的点对点（P2P）节点网络。此外，一个值得关注的新兴服务是 eth.limo，它旨在将主流网站的用户体验（通常由中心化平台提供）与 IPFS 等技术所提供的稳健性和去中心化特性相结合。
+
+### 去中心化网站
+
+[Eth.limo](https://eth.limo/) 是创建更优质的去中心化网站（也称为 DWebsites）过程中缺失的关键一环，它让你可以像访问传统应用一样访问这些网站。它基于 ENS（以太坊域名服务） 技术，该技术通过 .eth 域名使以太坊地址变得更加用户友好。以太坊联合创始人之一 Vitalik Buterin 就使用 ENS 将其钱包地址 `0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045` 与易于记忆的名称 `vitalik.eth` 绑定在一起。
+
+ENS 的功能不仅限于将域名与以太坊地址链接：它还可以解析为 IPFS 网站（实际上是内容哈希），例如 `bafybeif3dy…ga4zu`。与 IPFS 网站相关的主要问题是，大多数主流浏览器无法正确解析它们并向用户展示内容。这正是 eth.limo 发挥作用的地方：它为 ENS 名称和 IPFS 内容运行一个反向代理。它会捕获所有对 `*.eth.limo`（基本上是所有以 `.eth.limo` 结尾的网站）的请求，自动解析所请求 ENS 记录中的 IPFS 内容哈希（contenthash），并通过 HTTPS 返回相应的静态内容。
+
+例如，当你访问 [Vitalik Buterin 的官方博客](https://vitalik.eth.limo/)时，幕后发生的逻辑如下：
+1. Eth.limo 监测到发往 vitalik.eth ENS 域名的传入请求。
+2. 它将其解析为包含该网站主页的 IPFS 内容哈希（这是 Buterin 预先设置好的）。
+3. 它通过 HTTPS 返回相应的静态内容。
+
+通过这种方式，世界上任何拥有浏览器的人都可以轻松访问存储在 IPFS 上的内容，且无需进行任何复杂的配置或设置。
+
+### 局限性
+
+尽管去中心化网站（DWebsites）技术——特别是 eth.limo——正在迅速演进和完善，但在编写本章时（2025 年 6 月），仍存在一些局限性。首先，IPFS 只能处理静态文件，因此无法执行任何形式的服务端计算。此外，要使用 eth.limo，你需要购买一个 ENS 域名并将其链接到前端的 IPFS 内容哈希上。而且你必须始终使用 *.eth.limo 这个自定义域名；你不能去掉末尾的 .limo 部分，否则你的 Web 浏览器将无法将 ENS 名称解析为 DApp 的 IPFS 前端。这可能也是大多数 DApp 目前尚未采用 `eth.limo` 的原因。
+
+> [!Tip]
+> 尽管大多数 Web 浏览器目前还不兼容 ENS 和 IPFS，但某些浏览器已经开始增加对它们的支持，[Brave 浏览器](https://oreil.ly/LlJT7)就是一个典型例子。
+
+必须指出的是，eth.limo 也是一个潜在的中心化第三方，可能会在没有任何通知的情况下停止工作。如果发生这种情况，你的 DApp 仍然可以通过 IPFS 访问，但 .eth.limo 这个 URL 将无法再将用户重定向到这些应用。
+
+如果你对此感兴趣并想深入研究这种构建完全去中心化网站的方案，可以在其[官方网站](https://eth.limo/)上找到更多详细信息。
+
+### 部署到 IPFS
+
+Scaffold-ETH 2 提供了另一个简单的命令，让你可以快速地将 DApp 推送到 IPFS。你只需打开一个新的终端并输入：
+```
+$ yarn ipfs
+```
+大功告成！你应该会看到类似这样的输出
+```
+   Creating an optimized production build ...
+ 
+ ✓ Compiled successfully
+ ✓ Linting and checking validity of types
+    
+ ✓ Collecting page data
+    
+ ✓ Generating static pages (8/8)
+ ✓ Collecting build traces
+    
+ ✓ Finalizing page optimization
+
+…
+
+🚀  Upload complete! Your site is now available at: https://community.bgipfs.com/ipfs/bafybei…
+```
+如果你访问显示的网址，你会发现你的 DApp 运行良好，其前端托管在 IPFS 上。字符串 "bafy…" 就是 IPFS 内容哈希（contenthash）。如果你拥有个人 ENS 域名并希望将其重定向到这个由 IPFS 托管的站点，你仍需要配置 eth.limo。
+
+以下是 yarn ipfs 命令在幕后实际执行的操作：
+1. 构建前端：将前端代码进行编译打包，生成准备上传至 IPFS 的静态文件。
+2. 上传文件：通过 BuidlGuidl（Scaffold-ETH 2 的维护团队）的 IPFS 社区节点将静态文件上传至 IPFS。
+3. 返回 URL：返回一个重定向至这些静态文件的 URL，该 URL充当了 IPFS 内容的反向代理（格式为 `community.bgipfs.com/<ipfs-内容哈希>`）。
+
+如果你想学习如何运行自己的 IPFS 节点并进行集群固定（pin a cluster），可以参考 [BuidlGuidl IPFS](https://www.bgipfs.com/)。
+
+## 从应用（App）到去中心化应用（DApp）
+
+在过去的几个章节中，我们逐步构建了一个去中心化应用。我们利用 Scaffold-ETH 这一工具极大地简化了开发工作流：从启动本地区块链开始，到部署合约，再到启动本地前端以立即进行交互测试。随后，我们将 DApp 的前端发布到了 Vercel，展示了在生产级环境中部署 DApp 是多么简单。最后，我们探索了如何通过将前端发布到 IPFS，并结合 ENS 和 eth.limo 等解决方案来进一步实现去中心化，从而让任何人无需安装特殊应用即可访问它。
+
+图 12-13 简明地概述了创建一个完全去中心化应用所需的工程技术栈。
+![Figure 12-13](<./images/figure 12-13.png>)
+图 12-13. DApp 完整工程技术栈简明概述
+
+## 结语
+在本章中，我们探索了如何利用现代开发工具来简化工作流，并从零开始构建一个基础的 DApp。在下一章中，我们将深入研究以太坊上一些最重要的 DApp 及其分类，它们共同构成了众所周知的去中心化金融（DeFi）。
