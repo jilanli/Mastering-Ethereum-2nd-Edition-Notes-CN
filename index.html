@@ -10,9 +10,12 @@
   <script>
     window.$docsify = {
       name: '精通以太坊 第二版',
-      repo: 'jilanli/Mastering-Ethereum-2nd-Edition-Notes-CN'
+      repo: 'https://github.com/jilanli/Mastering-Ethereum-2nd-Edition-Notes-CN',
       loadSidebar: true, // 启用侧边栏
-      subMaxLevel: 2    // 目录层级
+      subMaxLevel: 2,    // 目录层级
+      alias: {
+        '/.*/_sidebar.md': '/_sidebar.md'
+      }
     }
   </script>
   <script src="//cdn.jsdelivr.net/npm/docsify/lib/docsify.min.js"></script>
