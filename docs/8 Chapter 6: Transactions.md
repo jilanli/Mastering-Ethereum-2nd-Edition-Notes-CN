@@ -580,23 +580,22 @@ $$s \equiv q^{-1} (Keccak256(m) + r \cdot k) \pmod{p}$$
 
 示例 6-1. 创建并签名一笔原始以太坊交易
 ```js
-// Load requirements first:
-//
+// 加载需求：
 // npm install ethers
 //
 // Run with: node eip1559_tx.js
 import { ethers } from "ethers";
 
-// Create provider with your RPC endpoint
+// 使用你的 RPC 终端创建 provider
 const provider = new ethers.JsonRpcProvider("https://ethereum-sepolia-rpc.publicnode.com");
 
-// Private key
+// 私钥
 const privKey = "0xd6d2672c6b4489e6bcd4e93b9af620fa0204b639b7d7f93765479c0846be0b58";
 
-// Create a wallet instance
+// 创建钱包实例
 const wallet = new ethers.Wallet(privKey);
 
-// Get nonce and create transaction data
+// 获取 nonce 并创建交易数据
 const txData = {
   nonce: await provider.getTransactionCount(wallet.address), // Get nonce from provider
   to: "0xb0920c523d582040f2bcb1bd7fb1c7c1ecebdb34", // Receiver address
@@ -608,23 +607,23 @@ const txData = {
   chainId: 11155111, // Sepolia chain ID
 };
 
-// Calculate RLP-encoded transaction hash (pre-signed)
+// 计算 RLP 编码的交易哈希（预签名）
 const unsignedTx = ethers.Transaction.from(txData).unsignedSerialized;
 console.log("RLP-Encoded Tx (Unsigned): " + unsignedTx);
 const txHash = ethers.keccak256(unsignedTx);
 console.log("Tx Hash (Unsigned): " + txHash);
 
-// Sign the transaction
+// 签名并发送交易
 async function signAndSend() {
-  // Sign the transaction with the wallet
+  // 使用钱包对交易进行签名
   const signedTx = await wallet.signTransaction(txData);
   console.log("Signed Raw Transaction: " + signedTx);
 
-  // Send the signed transaction to the Ethereum network
+  // 将签名后的交易广播到以太坊网络
   const txResponse = await provider.broadcastTransaction(signedTx);
   console.log("Transaction Hash: " + txResponse.hash);
 
-  // Wait for the transaction to be mined
+  // 等待交易被打包（矿工处理）
   const receipt = await txResponse.wait();
   console.log("Transaction Receipt: ", receipt);
 }
@@ -665,8 +664,8 @@ Transaction Receipt:  TransactionReceipt {
 import { ethers } from "ethers";
 const RLP = require('@ethereumjs/rlp');
 
-// Replace with your own RPC and private key
-const rpcUrl = "https://ethereum-sepolia-rpc.publicnode.com"; // or mainnet, etc.
+// 替换为你自己的 RPC 和私钥
+const rpcUrl = "https://ethereum-sepolia-rpc.publicnode.com"; // 或主网等
 const provider = new ethers.JsonRpcProvider(rpcUrl);
 const privateKey = "0xYOUR_PRIVATE_KEY_HERE";
 const wallet = new ethers.Wallet(privateKey, provider);
@@ -674,45 +673,45 @@ const wallet = new ethers.Wallet(privateKey, provider);
 const recipient = "0xRECIPENT_ADDRESS"; // example address
 
 async function createAndSendRawEip1559Tx() {
-  const chainId = await provider.getChainId(); // This is a RPC call
-  const nonce = await provider.getTransactionCount(wallet.address); // This is a RPC call
+  const chainId = await provider.getChainId(); / 这是一个 RPC 调用
+  const nonce = await provider.getTransactionCount(wallet.address); // 这是一个 RPC 调用
 
-  // Example parameters — adjust as needed (or use provider.estimateGas + getFeeData)
-  const maxPriorityFeePerGas = ethers.parseUnits("2", "gwei");   // tip
-  const maxFeePerGas = ethers.parseUnits("30", "gwei");         // fee cap (base fee + tip)
+  // 示例参数 —— 根据需要调整（或使用 provider.estimateGas + getFeeData）
+  const maxPriorityFeePerGas = ethers.parseUnits("2", "gwei");   // 小费 (tip)
+  const maxFeePerGas = ethers.parseUnits("30", "gwei");         // 费用上限 (基础费 + 小费)
   const gasLimit = 21000n;
   const value = ethers.parseEther("0.01"); // 0.01 ETH
-  const data = "0x"; // or contract calldata
-  const accessList = []; // [] or proper access list for EIP-2930 style savings
+  const data = "0x"; // 或合约调用数据 (calldata)
+  const accessList = []; // [] 或用于 EIP-2930 类型节省费用的适当访问列表
 
-  // Unsigned fields in strict order for Transaction Type 2
+  // 交易类型 2 (Transaction Type 2) 严格排序的未签名字段
   const unsignedFields = [
-    ethers.toBeHex(chainId),              // chainId
+    ethers.toBeHex(chainId),              // 链 ID
     ethers.toBeHex(nonce),                // nonce
-    ethers.toBeHex(gasLimit),             // gasLimit
-    ethers.toBeHex(maxPriorityFeePerGas), // maxPriorityFeePerGas
-    ethers.toBeHex(maxFeePerGas),         // maxFeePerGas
-    recipient,                            // to
-    ethers.toBeHex(value),                // value
-    data,                                 // data
-    accessList                            // accessList
+    ethers.toBeHex(gasLimit),             // gas 限制
+    ethers.toBeHex(maxPriorityFeePerGas), // 最大优先费用 (maxPriorityFeePerGas)
+    ethers.toBeHex(maxFeePerGas),         // 最大费用 (maxFeePerGas)
+    recipient,                            // 接收者 (to)
+    ethers.toBeHex(value),                // 金额 (value)
+    data,                                 // 数据 (data)
+    accessList                            // 访问列表 (accessList)
   ];
 
-  // RLP-encode the unsigned fields
+  // 对未签名字段进行 RLP 编码
   const encodedUnsigned = RLP.encode(unsignedFields);
 
-  // Prepend the transaction type byte (0x02)
+  // 在开头添加交易类型字节 (0x02)
   const txType = Buffer.from('02', 'hex');
   const fullTx = Buffer.concat([txType, encodedUnsigned]);
 
-  // This is the signing hash
+  // 这是用于签名的哈希
   const signingHash = ethers.keccak256(fullTx);
 
-  // Sign the hash
+  // 对哈希进行签名
   const signingKey = new ethers.SigningKey(wallet.privateKey);
   const signature = signingKey.sign(ethers.getBytes(signingHash));
 
-  // For typed transactions we use yParity (0 or 1) instead of legacy v
+  // 对于类型化交易，我们使用 yParity (0 或 1) 来替代传统的 v
   const signedFields = [
     ...unsignedFields,
     sig.v - 27, // yParity (0 or 1)
@@ -726,7 +725,7 @@ async function createAndSendRawEip1559Tx() {
 
   console.log("Raw transaction hex:\n", rawTransaction);
 
-  // Send the raw transaction
+  // 发送原始交易
   const txHash = await provider.send("eth_sendRawTransaction", [rawTransaction]);
   console.log("Transaction sent! Hash:", txHash);
 
@@ -812,7 +811,9 @@ EIP-155 “简单重放攻击保护”标准规定了一种受重放攻击保护
 链 ID 字段根据交易预定的网络取值，如表 6-2 所示：
 
 表 6-2. 常见链标识符（Chain Identifiers）
+
 ![Table 6-2](<./images/table 6-2.png>)
+
 欲了解详尽的链标识符列表，请参阅 [ChainList](https://chainlist.org/)。
 最终的交易结构会经过 RLP 编码、哈希处理并进行签名。更多细节请参考 EIP-155 规范。
 
