@@ -10,7 +10,7 @@
 * [第 7 章：智能合约和 Solidity](<docs/9 Chapter 7: Smart Contracts and Solidity.md>)
 * [第 8 章：智能合约和 Vyper](<docs/10 Chapter 8: Smart Contracts and Vyper.md>)
 * [第 9 章：智能合约安全](<docs/11 Chapter 9: Smart Contract Security.md>)
-* [第 10 章：代币](<docs/12 Chpater 10: Tokens.md>)
+* [第 10 章：代币](<docs/12 Chapter 10: Tokens.md>)
 * [第 11 章：预言机](<docs/13 Chapter 11: Oracles.md>)
 * [第 12 章：去中心化应用](<docs/14 Chapter 12: Decentralized Applications.md>)
 * [第 13 章：去中心化金融](<docs/15 Chapter 13: Decentralized Finance.md>)
