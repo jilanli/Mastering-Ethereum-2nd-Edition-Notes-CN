@@ -19,21 +19,35 @@
       loadSidebar: true,
       subMaxLevel: 2,
       routerMode: 'hash',
-      // KaTeX 插件详细配置
+      
+      // 全文搜索配置
+      search: {
+        maxAge: 86400000,
+        paths: 'auto',
+        placeholder: '搜索',
+        noData: '未找到结果',
+        depth: 6
+      },
+
+      // KaTeX 兼容性配置
       katex: {
         delimiters: [
           { left: "$$", right: "$$", display: true },
           { left: "$", right: "$", display: false }
         ],
-        // 重要：关闭严格模式，忽略你之前报错的 Unicode 减号字符
         options: {
-          strict: false
+          // 忽略非法字符报错（如 Unicode 减号），确保公式能强行渲染
+          strict: 'ignore'
         }
       }
     }
   </script>
 
   <script defer src="https://cdn.jsdelivr.net/npm/docsify@4/lib/docsify.min.js"></script>
+  
+  <script defer src="https://cdn.jsdelivr.net/npm/docsify/lib/plugins/search.min.js"></script>
+
+  <script defer src="https://cdn.jsdelivr.net/npm/docsify-copy-code/dist/docsify-copy-code.min.js"></script>
 
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 
