@@ -19,23 +19,25 @@
       loadSidebar: true,
       subMaxLevel: 2,
       routerMode: 'hash',
-      // 2. 核心配置：显式指定公式定界符
+      // KaTeX 插件详细配置
       katex: {
         delimiters: [
-          { left: '$$', right: '$$', display: true },
-          { left: '$', right: '$', display: false },
-          { left: '\\(', right: '\\)', display: false },
-          { left: '\\[', right: '\\]', display: true }
-        ]
+          { left: "$$", right: "$$", display: true },
+          { left: "$", right: "$", display: false }
+        ],
+        // 重要：关闭严格模式，忽略你之前报错的 Unicode 减号字符
+        options: {
+          strict: false
+        }
       }
     }
   </script>
 
-  <script src="https://cdn.jsdelivr.net/npm/docsify@4/lib/docsify.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/docsify@4/lib/docsify.min.js"></script>
 
-  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 
-  <script src="https://cdn.jsdelivr.net/npm/docsify-katex@1.4.5/dist/docsify-katex.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/docsify-katex@1.4.5/dist/docsify-katex.js"></script>
 
 </body>
 </html>
