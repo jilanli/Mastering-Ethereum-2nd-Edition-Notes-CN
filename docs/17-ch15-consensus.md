@@ -720,21 +720,3 @@ Casper FFG 确保网络保持活跃，并且总能在不惩罚任何诚实验证
 * Gasper 论文 ([Gasper Paper](https://oreil.ly/1BoMt))
 * 《升级以太坊》 ([Upgrading Ethereum](https://oreil.ly/Jzh-9)) —— Ben Edgington 著
 * "去中心化是好是坏？保卫以太坊 2.0 的共识" ([Decentralization Is Good or Not? Defending Consensus in Ethereum 2.0](https://oreil.ly/VNC1Q))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
