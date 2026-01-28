@@ -247,6 +247,7 @@ $$w' = [8, 9, 10, 15]$$
 现在我们需要对 $w'$ 的所有数值进行承诺，并将该承诺发送给验证者，以此确保如果我们通过提供虚假的 $w'$ 值进行欺骗，这种行为将能被轻易发现。图 17-2 展示了以 $w'$ 的所有数值作为叶子节点所构建的默克尔树。
 
 ![Figure 17-2](<./images/figure 17-2.png>)
+
 图 17-2. 使用 $w'$ 值构建的默克尔树
 
 默克尔根（Merkle root）是最终发送给验证者的承诺（commitment）。
@@ -385,28 +386,6 @@ SNARK 系统依赖于一种被称为“可信设置”（trusted setup）的密�
 * Ethan Buchman 的名篇： ["You Could Have Invented SNARKs"](https://oreil.ly/jiaOa) —— 适合想从直觉理解 SNARK 推导过程的读者。
 * Maksym Petkus 的深度解析： ["Why and How zk-SNARK Works: Definitive Explanation"](https://oreil.ly/EUUzt) —— 对数学背景（多项式、配对等）最清晰的解释之一。
 * RareSkills 零知识证明手册： [The RareSkills Book of Zero Knowledge](https://oreil.ly/tpHrl) —— 适合开发者的实战导向教程。
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
