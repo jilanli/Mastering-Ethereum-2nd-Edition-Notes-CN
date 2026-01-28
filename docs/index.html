@@ -49,6 +49,31 @@
     .sidebar-nav li a {
       padding: 5px 0 5px 5px !important;
     }
+    /* 1. 给折叠插件的箭头增加右侧间距，防止重叠 */
+    .sidebar-nav .folder-link:before {
+      margin-right: 12px !important; /* 增加箭头的右外边距 */
+      display: inline-block;
+      transition: transform 0.3s;
+    }
+    
+    /* 2. 为侧边栏的链接文字增加左侧偏移 */
+    .sidebar-nav li a, 
+    .sidebar-nav li strong {
+      padding-left: 5px !important; /* 给文字左侧留出呼吸空间 */
+      display: inline-block;
+    }
+    
+    /* 3. 如果是子层级（嵌套的章节），增加整体缩进，让层次更分明 */
+    .sidebar-nav .app-sub-sidebar li {
+      padding-left: 15px !important;
+    }
+    
+    /* 4. 解决箭头与文字在垂直方向上的对齐问题 */
+    .sidebar-nav .folder-link:before {
+      vertical-align: middle;
+      position: relative;
+      top: -1px; /* 微调高度，使其与文字中线对齐 */
+    }
   </style>
 </head>
 <body>
