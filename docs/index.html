@@ -36,6 +36,12 @@
       loadSidebar: true,
       subMaxLevel: 3,
       auto2top: true,
+      relativeRemoteHub: true, // 关键：处理相对路径，防止锚点跳转 404
+      corner: {
+        // 强制刷新页面时保持锚点可用
+        url: 'https://github.com/jilanli/Mastering-Ethereum-2nd-Edition-Notes-CN',
+        icon: 'github'
+      },
 
       search: 'auto',
 
@@ -65,7 +71,7 @@
   <script defer src="https://cdn.jsdelivr.net/npm/docsify-copy-code/dist/docsify-copy-code.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/docsify-sidebar-collapse/dist/sidebar.min.js"></script>
   
-  <script defer src="https://cdn.jsdelivr.net/npm/docsify-footnote/dist/docsify-footnote.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/docsify-footnote/dist/docsify-footnote.min.js"></script>
 
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/docsify-katex@1.4.5/dist/docsify-katex.js"></script>
