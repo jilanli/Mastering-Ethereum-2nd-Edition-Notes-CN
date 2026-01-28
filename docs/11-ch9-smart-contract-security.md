@@ -135,7 +135,9 @@
 3. 在回调过程中（此时合约 A 的状态尚未更新完成），攻击者的合约调用了另一个协议（合约 B）。合约 B 与合约 A 相关联，并依赖于合约 A 提供的数据。
 4. 合约 B 在不知情的情况下从合约 A 读取数据。然而，由于合约 A 尚未完成更新，其状态是过时的。
 在整个循环结束前，攻击者已经利用合约 A 的过时数据完成了对合约 B 的攻击，随后才让合约 A 的回调和原始调用正常结束。这一过程如图 9-1 所示。
+
 ![Figure 9-1](<./images/figure 9-1.png>)
+
 图 9-1. 只读重入
 
 这里的关键在于：合约 B 信任来自合约 A 的数据，但合约 A 的状态尚未完成同步，从而让攻击者利用了这一“延迟”进行牟利。此类攻击更难防御，因为开发者通常认为 view 函数不修改状态，因而是安全的，所以往往不会为其添加重入锁。只读重入带给我们的教训是：当只读函数被外部合约所依赖时，它们同样可能变得非常危险。
@@ -152,7 +154,7 @@ contract EtherStore {
     mapping(address => uint256) balances;
 
       modifier nonReentrant {
-      require(!lock, "Can't reenter");
+      require(lock, "Can't reenter");
       lock = true;
       _;
       lock = false;
@@ -165,7 +167,7 @@ contract EtherStore {
 ```
 在这个例子中，nonReentrant 修饰器利用锁变量防止 withdrawFunds 函数在运行期间被重入。该修饰器在函数开始时锁定合约，并在结束后解锁。然而，我们不应重新发明轮子。与其自己编写重入锁，不如依赖像 OpenZeppelin 的 ReentrancyGuard 这样经过充分测试的库。这些库提供了安全且经过 Gas 优化的解决方案。
 
-> [!Note]
+> [Note]
 > 随着 Solidity 0.8.24 引入了以太坊的瞬时存储（Transient Storage），OpenZeppelin 推出了 ReentrancyGuardTransient。这是 ReentrancyGuard 的一个新变体，它利用瞬时存储显著降低了 Gas 成本。由 [EIP-1153](https://oreil.ly/fRvKl) 启用的瞬时存储提供了一种更廉价的方式来存储仅在单笔交易期间需要的数据，这使其成为重入锁及类似临时逻辑的理想选择。然而，ReentrancyGuardTransient 只能在支持 EIP-1153 的链上使用，因此在实施前请确保你的目标链支持此功能。
 
 另一种方法是使用 Solidity 内置的 transfer 和 send 函数来发送以太币。这些函数仅转发极少量的 Gas（2,300 单位），这通常不足以让接收合约执行重入调用，因此它们是防御重入的一种简单方法。然而，它们也有显著的缺点。如果接收者是一个在其 fallback 或 receive 函数中带有正当逻辑的智能合约，转账可能会失败，从而导致资金锁死。随着 EIP-7702 的引入（该提案允许普通账户 EOA 附加代码，包括回退逻辑），这种风险正变得越来越大。随着更多 EOA 采用此功能，使用 transfer 或 send 的交易更有可能因为 Gas 不足而在常规执行中触发回退（Revert）。从安全角度来看，这种方法并非“面向未来”：如果未来的硬分叉降低了某些操作的 Gas 成本，2,300 单位可能变得足以执行重入，从而打破先前安全的假设。因此，虽然 transfer 和 send 在极少数情况下仍有帮助，但我们需要谨慎使用，不能将其作为主要的防御手段。
