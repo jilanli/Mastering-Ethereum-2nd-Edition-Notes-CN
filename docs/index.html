@@ -24,19 +24,30 @@
     /* 注脚样式微调：让注脚跳转后的回退箭头更好看 */
     .footnote-symbol { color: var(--theme-color); font-weight: bold; }
     section.footnotes { margin-top: 50px; border-top: 1px solid #eee; padding-top: 20px; color: #666; font-size: 0.9em; }
-    /* 隐藏 Docsify 默认的侧边栏箭头，解决“双箭头”问题 */
+    /* 1. 彻底抹除 Docsify 原生的侧边栏箭头（那个不动的箭头） */
+    .sidebar-nav ul li[class^="section-"] > a:before,
+    .sidebar-nav ul li[class^="section-"] > strong:before,
+    .sidebar-nav li:before {
+      display: none !important;
+      content: none !important;
+    }
+    
+    /* 2. 移除 theme-simple 可能带入的默认点状或箭头样式 */
     .sidebar-nav li > .section-link:before {
       content: none !important;
     }
-
-    /* 移除折叠插件可能重复生成的原生箭头 */
-    .sidebar-nav li > .item:after {
-      content: none !important;
-    }
-
-    /* 微调折叠图标的颜色，使其与你的以太坊主题色一致 */
+    
+    /* 3. 确保插件生成的箭头（会动的那个）有足够的空间且美观 */
     .sidebar-nav .folder-link:before {
+      font-size: 12px;
+      margin-right: 5px;
+      /* 确保颜色跟随你的以太坊主题色 */
       color: var(--theme-color) !important;
+    }
+    
+    /* 4. 微调侧边栏间距，防止箭头和文字重叠 */
+    .sidebar-nav li a {
+      padding: 5px 0 5px 5px !important;
     }
   </style>
 </head>
@@ -77,17 +88,17 @@
     }
   </script>
 
-<script src="https://cdn.jsdelivr.net/npm/docsify@4/lib/docsify.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
-
-<script src="https://cdn.jsdelivr.net/npm/docsify-plugin-flexible-alerts"></script>
-<script src="https://cdn.jsdelivr.net/npm/docsify-footnote/dist/docsify-footnote.min.js"></script>
-
-<script src="https://cdn.jsdelivr.net/npm/docsify-katex@1.4.5/dist/docsify-katex.js"></script>
-
-<script defer src="https://cdn.jsdelivr.net/npm/docsify-themeable@0/dist/js/docsify-themeable.min.js"></script>
-<script defer src="https://cdn.jsdelivr.net/npm/docsify/lib/plugins/search.min.js"></script>
-<script defer src="https://cdn.jsdelivr.net/npm/docsify-copy-code/dist/docsify-copy-code.min.js"></script>
-<script defer src="https://cdn.jsdelivr.net/npm/docsify-sidebar-collapse/dist/sidebar.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/docsify@4/lib/docsify.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  
+  <script src="https://cdn.jsdelivr.net/npm/docsify-plugin-flexible-alerts"></script>
+  <script src="https://cdn.jsdelivr.net/npm/docsify-footnote/dist/docsify-footnote.min.js"></script>
+  
+  <script src="https://cdn.jsdelivr.net/npm/docsify-katex@1.4.5/dist/docsify-katex.js"></script>
+  
+  <script defer src="https://cdn.jsdelivr.net/npm/docsify-themeable@0/dist/js/docsify-themeable.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/docsify/lib/plugins/search.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/docsify-copy-code/dist/docsify-copy-code.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/docsify-sidebar-collapse/dist/sidebar.min.js"></script>
 </body>
 </html>
