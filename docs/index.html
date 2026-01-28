@@ -9,19 +9,21 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/docsify-themeable@0/dist/css/theme-simple.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/docsify-sidebar-collapse/dist/sidebar.min.css">
+  
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css">
 
   <style>
     :root {
-      /* 自定义主题色：以太坊蓝 */
-      --theme-color: #345da7;
-      --base-font-size: 16px;
-      --content-max-width: 60em;
+      --theme-color: #345da7; /* 以太坊经典蓝 */
+      --content-max-width: 65em;
       --sidebar-width: 280px;
     }
     /* 搜索框美化 */
     .search input { border-radius: 20px !important; }
-    /* 修正 KaTeX 公式显示间距 */
-    .katex-display { margin: 1.2em 0 !important; overflow-x: auto; overflow-y: hidden; }
+    /* 修正 KaTeX 在某些移动端的溢出问题 */
+    .katex-display { overflow-x: auto; overflow-y: hidden; margin: 1em 0; }
+    /* 微调提示框字体 */
+    .alert-title { font-weight: bold !important; text-transform: uppercase; }
   </style>
 </head>
 <body>
@@ -35,25 +37,20 @@
       subMaxLevel: 3,
       auto2top: true,
 
-      // 1. 全文搜索配置
-      search: {
-        maxAge: 86400000,
-        paths: 'auto',
-        placeholder: '搜索知识点...',
-        noData: '未找到结果',
-        depth: 6
-      },
+      // 全文搜索
+      search: 'auto',
 
-      // 2. Flexible Alerts 配置 (让 [!TIP] 生效)
+      // 核心配置：Flexible Alerts (精准匹配你的 Tip, Note, Warning, Caution 格式)
       'flexible-alerts': {
-        style: 'flat', // 样式：'flat' 比较现代，'callout' 比较醒目
-        note: { label: "笔记" },
-        tip: { label: "提示" },
-        warning: { label: "警告" },
-        attention: { label: "注意" }
+        style: 'flat',
+        // 映射你文档中使用的首字母大写风格
+        Note: { label: "笔记", icon: 'fa fa-info-circle', className: 'note' },
+        Tip: { label: "提示", icon: 'fa fa-lightbulb-o', className: 'tip' },
+        Warning: { label: "警告", icon: 'fa fa-warning', className: 'warning' },
+        Caution: { label: "注意", icon: 'fa fa-exclamation-triangle', className: 'attention' }
       },
 
-      // 3. KaTeX 配置
+      // KaTeX 数学公式渲染
       katex: {
         delimiters: [
           { left: "$$", right: "$$", display: true },
