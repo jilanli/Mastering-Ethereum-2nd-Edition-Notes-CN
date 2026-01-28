@@ -24,6 +24,20 @@
     /* 注脚样式微调：让注脚跳转后的回退箭头更好看 */
     .footnote-symbol { color: var(--theme-color); font-weight: bold; }
     section.footnotes { margin-top: 50px; border-top: 1px solid #eee; padding-top: 20px; color: #666; font-size: 0.9em; }
+    /* 隐藏 Docsify 默认的侧边栏箭头，解决“双箭头”问题 */
+    .sidebar-nav li > .section-link:before {
+      content: none !important;
+    }
+
+    /* 移除折叠插件可能重复生成的原生箭头 */
+    .sidebar-nav li > .item:after {
+      content: none !important;
+    }
+
+    /* 微调折叠图标的颜色，使其与你的以太坊主题色一致 */
+    .sidebar-nav .folder-link:before {
+      color: var(--theme-color) !important;
+    }
   </style>
 </head>
 <body>
