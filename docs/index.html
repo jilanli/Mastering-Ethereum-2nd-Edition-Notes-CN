@@ -8,30 +8,20 @@
   
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/docsify-themeable@0/dist/css/theme-simple.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/docsify-sidebar-collapse/dist/sidebar.min.css">
 
   <style>
     :root {
-      /* 这里的变量是 Themeable 专有的，比官方主题更易定制 */
+      /* 自定义主题色：以太坊蓝 */
       --theme-color: #345da7;
       --base-font-size: 16px;
+      --content-max-width: 60em;
       --sidebar-width: 280px;
-      --content-max-width: 55em; /* 限制宽度，阅读更舒适 */
-      
-      /* 侧边栏样式优化 */
-      --sidebar-background: #fdfdfd;
-      --sidebar-nav-link-color: #444;
-      --sidebar-nav-link-color--active: var(--theme-color);
-      
-      /* 代码块圆角 */
-      --code-inline-border-radius: 4px;
-      --code-theme-background: #f8f8f8;
     }
-
-    /* 让搜索框更好看一点 */
-    .search input {
-      border-radius: 20px !important;
-      background: #f0f2f5 !important;
-    }
+    /* 搜索框美化 */
+    .search input { border-radius: 20px !important; }
+    /* 修正 KaTeX 公式显示间距 */
+    .katex-display { margin: 1.2em 0 !important; overflow-x: auto; overflow-y: hidden; }
   </style>
 </head>
 <body>
@@ -43,15 +33,27 @@
       repo: 'https://github.com/jilanli/Mastering-Ethereum-2nd-Edition-Notes-CN',
       loadSidebar: true,
       subMaxLevel: 3,
-      auto2top: true, // 切换页面自动回到顶部
-      
-      // 全文搜索
-      search: 'auto',
+      auto2top: true,
 
-      // 侧边栏折叠插件配置
-      sidebarDisplayNotFound: true,
+      // 1. 全文搜索配置
+      search: {
+        maxAge: 86400000,
+        paths: 'auto',
+        placeholder: '搜索知识点...',
+        noData: '未找到结果',
+        depth: 6
+      },
 
-      // KaTeX
+      // 2. Flexible Alerts 配置 (让 [!TIP] 生效)
+      'flexible-alerts': {
+        style: 'flat', // 样式：'flat' 比较现代，'callout' 比较醒目
+        note: { label: "笔记" },
+        tip: { label: "提示" },
+        warning: { label: "警告" },
+        attention: { label: "注意" }
+      },
+
+      // 3. KaTeX 配置
       katex: {
         delimiters: [
           { left: "$$", right: "$$", display: true },
@@ -66,12 +68,16 @@
   
   <script defer src="https://cdn.jsdelivr.net/npm/docsify-themeable@0/dist/js/docsify-themeable.min.js"></script>
 
-  <script defer src="https://cdn.jsdelivr.net/npm/docsify-sidebar-collapse/dist/docsify-sidebar-collapse.min.js"></script>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/docsify-sidebar-collapse/dist/sidebar.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/docsify-plugin-flexible-alerts"></script>
 
   <script defer src="https://cdn.jsdelivr.net/npm/docsify/lib/plugins/search.min.js"></script>
+
   <script defer src="https://cdn.jsdelivr.net/npm/docsify-copy-code/dist/docsify-copy-code.min.js"></script>
+
+  <script defer src="https://cdn.jsdelivr.net/npm/docsify-sidebar-collapse/dist/docsify-sidebar-collapse.min.js"></script>
+
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/docsify-katex@1.4.5/dist/docsify-katex.js"></script>
+
 </body>
 </html>
