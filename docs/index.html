@@ -9,21 +9,21 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/docsify-themeable@0/dist/css/theme-simple.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/docsify-sidebar-collapse/dist/sidebar.min.css">
-  
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css">
 
   <style>
     :root {
-      --theme-color: #345da7; /* 以太坊经典蓝 */
+      --theme-color: #345da7;
       --content-max-width: 65em;
       --sidebar-width: 280px;
     }
-    /* 搜索框美化 */
     .search input { border-radius: 20px !important; }
-    /* 修正 KaTeX 在某些移动端的溢出问题 */
     .katex-display { overflow-x: auto; overflow-y: hidden; margin: 1em 0; }
-    /* 微调提示框字体 */
     .alert-title { font-weight: bold !important; text-transform: uppercase; }
+    
+    /* 注脚样式微调：让注脚跳转后的回退箭头更好看 */
+    .footnote-symbol { color: var(--theme-color); font-weight: bold; }
+    section.footnotes { margin-top: 50px; border-top: 1px solid #eee; padding-top: 20px; color: #666; font-size: 0.9em; }
   </style>
 </head>
 <body>
@@ -37,20 +37,16 @@
       subMaxLevel: 3,
       auto2top: true,
 
-      // 全文搜索
       search: 'auto',
 
-      // 核心配置：Flexible Alerts (精准匹配你的 Tip, Note, Warning, Caution 格式)
       'flexible-alerts': {
         style: 'flat',
-        // 映射你文档中使用的首字母大写风格
         Note: { label: "笔记", icon: 'fa fa-info-circle', className: 'note' },
         Tip: { label: "提示", icon: 'fa fa-lightbulb-o', className: 'tip' },
         Warning: { label: "警告", icon: 'fa fa-warning', className: 'warning' },
         Caution: { label: "注意", icon: 'fa fa-exclamation-triangle', className: 'attention' }
       },
 
-      // KaTeX 数学公式渲染
       katex: {
         delimiters: [
           { left: "$$", right: "$$", display: true },
@@ -64,14 +60,12 @@
   <script defer src="https://cdn.jsdelivr.net/npm/docsify@4/lib/docsify.min.js"></script>
   
   <script defer src="https://cdn.jsdelivr.net/npm/docsify-themeable@0/dist/js/docsify-themeable.min.js"></script>
-
   <script defer src="https://cdn.jsdelivr.net/npm/docsify-plugin-flexible-alerts"></script>
-
   <script defer src="https://cdn.jsdelivr.net/npm/docsify/lib/plugins/search.min.js"></script>
-
   <script defer src="https://cdn.jsdelivr.net/npm/docsify-copy-code/dist/docsify-copy-code.min.js"></script>
-
-  <script defer src="https://cdn.jsdelivr.net/npm/docsify-sidebar-collapse/dist/docsify-sidebar-collapse.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/docsify-sidebar-collapse/dist/sidebar.min.js"></script>
+  
+  <script defer src="https://cdn.jsdelivr.net/npm/docsify-footnote/dist/docsify-footnote.min.js"></script>
 
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/docsify-katex@1.4.5/dist/docsify-katex.js"></script>
