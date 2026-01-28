@@ -207,18 +207,23 @@ event MyLog:
     arg2: uint256
     message: indexed(bytes[100])
 ```
+
 你可以拥有最多四个索引参数（Indexed Arguments）（这些参数会成为可搜索的“主题”），以及任意数量的非索引参数，后者将成为事件数据的一部分。索引参数对于过滤和搜索事件非常有用，而非索引参数则可以包含更大量的数据。
 
 执行日志事件时使用 log 语句，其语法非常直观：
+
 ```Solidity
 log MyLog(msg.sender, 42, b"Hello, Vyper!")
 ```
+
 你也可以使用 pass 语句创建不带参数的事件：
+
 ```Solidity
 event SimpleEvent: pass
 # Later in your code:
 log SimpleEvent()
 ```
+
 虽然智能合约可以通过日志事件向以太坊链数据写入信息，但它们无法读取自己创建的链上日志事件。然而，通过日志事件写入数据的一个优势是，日志可以被公链上的轻客户端发现并读取。例如，已发布区块中的 logsBloom 值可以指示该区块中是否存在特定的日志事件。一旦确定了日志事件的存在，就可以从给定的交易收据（Transaction Receipt）中获取具体的日志数据。
 
 ## 结语
