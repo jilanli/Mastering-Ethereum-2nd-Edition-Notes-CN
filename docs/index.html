@@ -21,59 +21,55 @@
     .katex-display { overflow-x: auto; overflow-y: hidden; margin: 1em 0; }
     .alert-title { font-weight: bold !important; text-transform: uppercase; }
     
-    /* 注脚样式微调：让注脚跳转后的回退箭头更好看 */
+    /* 注脚样式 */
     .footnote-symbol { color: var(--theme-color); font-weight: bold; }
     section.footnotes { margin-top: 50px; border-top: 1px solid #eee; padding-top: 20px; color: #666; font-size: 0.9em; }
-    /* 1. 彻底抹除 Docsify 原生的侧边栏箭头（那个不动的箭头） */
-    .sidebar-nav ul li[class^="section-"] > a:before,
-    .sidebar-nav ul li[class^="section-"] > strong:before,
-    .sidebar-nav li:before {
+
+    /* ============ 侧边栏清理与对齐：彻底解决重叠 ============ */
+    
+    /* 1. 消除所有原生箭头和 theme-simple 干扰 */
+    .sidebar-nav li:before,
+    .sidebar-nav li a:before,
+    .sidebar-nav li > .section-link:before {
       display: none !important;
       content: none !important;
     }
-    
-    /* 2. 移除 theme-simple 可能带入的默认点状或箭头样式 */
-    .sidebar-nav li > .section-link:before {
-      content: none !important;
+
+    /* 2. 核心：为列表项设置相对定位，并给文字腾出空间 */
+    .sidebar-nav li {
+      position: relative !important;
+      margin: 0 !important;
+      padding: 0 !important;
     }
-    
-    /* 3. 确保插件生成的箭头（会动的那个）有足够的空间且美观 */
-    .sidebar-nav .folder-link:before {
-      font-size: 12px;
-      margin-right: 5px;
-      /* 确保颜色跟随你的以太坊主题色 */
-      color: var(--theme-color) !important;
-    }
-    
-    /* 4. 微调侧边栏间距，防止箭头和文字重叠 */
-    .sidebar-nav li a {
-      padding: 5px 0 5px 5px !important;
-    }
-    /* 1. 给折叠插件的箭头增加右侧间距，防止重叠 */
-    .sidebar-nav .folder-link:before {
-      margin-right: 12px !important; /* 增加箭头的右外边距 */
-      display: inline-block;
-      transition: transform 0.3s;
-    }
-    
-    /* 2. 为侧边栏的链接文字增加左侧偏移 */
+
+    /* 3. 强制推开标题文字，为左侧箭头留出 25px 的“专属车位” */
     .sidebar-nav li a, 
     .sidebar-nav li strong {
-      padding-left: 5px !important; /* 给文字左侧留出呼吸空间 */
-      display: inline-block;
+      padding: 8px 10px 8px 30px !important; /* 左边距 30px 确保绝不重叠 */
+      display: block !important;
+      line-height: 1.5;
     }
-    
-    /* 3. 如果是子层级（嵌套的章节），增加整体缩进，让层次更分明 */
-    .sidebar-nav .app-sub-sidebar li {
-      padding-left: 15px !important;
-    }
-    
-    /* 4. 解决箭头与文字在垂直方向上的对齐问题 */
+
+    /* 4. 精确控制插件生成的箭头位置 */
     .sidebar-nav .folder-link:before {
-      vertical-align: middle;
-      position: relative;
-      top: -1px; /* 微调高度，使其与文字中线对齐 */
+      position: absolute !important;
+      left: 8px !important;         /* 固定在左侧 8px 处 */
+      top: 12px !important;         /* 垂直方向微调，视文字高度而定 */
+      margin: 0 !important;
+      color: var(--theme-color) !important;
+      font-size: 12px !important;
+      transition: transform 0.2s ease;
     }
+    
+    /* 5. 处理展开后的旋转，确保轴心正确 */
+    .sidebar-nav .folder-link.open:before {
+      transform: rotate(90deg) !important;
+    }
+
+    /* 6. 子菜单缩进，让层级分明 */
+    .sidebar-nav .app-sub-sidebar {
+      padding-left: 15px;
+    }    
   </style>
 </head>
 <body>
