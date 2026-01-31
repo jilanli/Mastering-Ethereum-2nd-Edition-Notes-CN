@@ -310,7 +310,8 @@ contract FibonacciBalance {
 
 请注意，在第 21 行的 withdraw 函数中，我们执行了 fibonacciLibrary.delegatecall(fibSig, withdrawalCounter)。这调用了 setFibonacci 函数，如前所述，该函数会修改存储 slot[1]，在当前的上下文中即 calculatedFibNumber。这符合预期（即执行后 calculatedFibNumber 被修改了）。然而，回想一下 FibonacciLib 库合约中的 start 变量位于存储 slot[0]，而这在当前合约中正是 fibonacciLibrary 的地址。这意味着 fibonacci 函数将给出意想不到的结果。这是因为它引用了 start (slot[0])，而在当前调用上下文中，该槽位是 fibonacciLibrary 的地址（当被解释为 uint 时，通常是一个巨大的数值）。因此，withdraw 函数很可能会执行失败（Revert），因为合约中不太可能有 uint(fibonacciLibrary) 这么大数量的以太币——而这正是 calculatedFibNumber 将返回的值。
 
-更糟糕的是，FibonacciBalance 合约允许用户通过第 27 行的回退函数调用 fibonacciLibrary 的所有函数。正如我们之前讨论的，这包括 setStart 函数。我们讨论过，该函数允许任何人修改或设置存储 slot[0]。在这种情况下，存储 slot[0] 就是 fibonacciLibrary 的地址。因此，攻击者可以创建一个恶意合约，将该地址转换为 uint256（这在 Python 中可以很容易地使用 int('<address>', 16) 完成），然后调用 setStart(<攻击合约地址的整数形式>)。这将把 fibonacciLibrary 更改为攻击合约的地址。此后，每当用户调用 withdraw 或回退函数时，恶意合约就会运行（它可以窃取合约的全部余额），因为我们已经修改了 fibonacciLibrary 的实际地址。
+更糟糕的是，FibonacciBalance 合约允许用户通过第 27 行的回退函数调用 fibonacciLibrary 的所有函数。正如我们之前讨论的，这包括 setStart 函数。我们讨论过，该函数允许任何人修改或设置存储 slot[0]。在这种情况下，存储 slot[0] 就是 fibonacciLibrary 的地址。因此，攻击者可以创建一个恶意合约，将该地址转换为 uint256（这在 Python 中可以很容易地使用 `int('<address>', 16)` 完成），然后调用 setStart(<攻击合约地址的整数形式>)。这将把 fibonacciLibrary 更改为攻击合约的地址。此后，每当用户调用 withdraw 或回退函数时，恶意合约就会运行（它可以窃取合约的全部余额），因为我们已经修改了 fibonacciLibrary 的实际地址。
+
 这样一个攻击合约的示例如下：
 ```Solidity
 contract Attack {
