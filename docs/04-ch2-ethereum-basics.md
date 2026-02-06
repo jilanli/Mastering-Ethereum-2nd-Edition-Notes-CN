@@ -363,7 +363,9 @@ _to.transfer(_withdrawAmount);
 
 接下来，我们声明了另外两个函数：
 ```
-receive() external payable {} fallback() external payable {}
+receive() external payable {}
+
+fallback() external payable {}
 ```
 这些函数是 `fallback`（回退）和 `receive`（接收）函数。如果触发合约的交易没有指定合约中声明的任何函数，或者根本没有指定任何函数，或者不包含数据，这些函数就会被调用。合约可以拥有这些函数，它们通常是接收以太币的函数。当 `msg.data` 为空时，将触发 `receive` 函数；当 `msg.data` 不为空时，将触发 `fallback` 函数。
 
